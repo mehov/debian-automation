@@ -479,7 +479,10 @@ add_alias() {
 }
 add() {
     public_dir_name_default="public_html"
-    aliases="www."\$1
+    read -p "Add www.\$1? [Y/n]: " WWW_Yn
+    if [ "\${WWW_Yn}" = "" ] || [ "\${WWW_Yn}" = "Y" ] || [ "\${WWW_Yn}" = "y" ]; then
+        aliases="www.\$1"
+    fi
     database_name_random=\`echo \$1 | sed -e 's/\W//g'\`;
     database_user_random=\`sh /root/random_string.sh -l 8\`
     database_password_waitforit_random=\`sh /root/random_string.sh -l 12\`
