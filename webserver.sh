@@ -90,6 +90,17 @@ report_append()  {
 
 
 install() {
+    read -p "Install php7.0? Choosing (n) will install php5 [Y/n]: " PHP7_Yn
+    if [ "$PHP7_Yn" = "" ]; then
+        PHP7_Yn="Y"
+    fi
+    if [ "${PHP7_Yn}" = "Y" ]; then
+        PHP_VER="7.0"
+        # symlink to match the old naming format (see the issue #1)
+        ln -s /usr/bin/php-cgi7.0 /usr/bin/php7.0-cgi
+    else 
+        PHP_VER="5"
+    fi
     cat /dev/null > ~/bonjour.txt
     hostname_old=`hostname`
     if [ "${hostname_old}" = "" ] || [ "${hostname_old}" = "vps" ]; then
@@ -197,9 +208,9 @@ case $debian_version in
     ;;
 esac
 cat /dev/null > /etc/apt/sources.list
-echo "deb http://ftp.debian.org/debian $debian_codename main contrib non-free" >> /etc/apt/sources.list
-echo "deb http://security.debian.org/ $debian_codename/updates main contrib non-free" >> /etc/apt/sources.list
-echo "deb http://ftp.debian.org/debian/ $debian_codename-backports main contrib non-free" >> /etc/apt/sources.list
+echo "deb http://ftp.debian.org/debian ${debian_codename} main contrib non-free" >> /etc/apt/sources.list
+echo "deb http://security.debian.org/ ${debian_codename}/updates main contrib non-free" >> /etc/apt/sources.list
+echo "deb http://ftp.debian.org/debian/ ${debian_codename}-backports main contrib non-free" >> /etc/apt/sources.list
 for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
 apt-get update
@@ -231,34 +242,53 @@ if [ ! "$PORT_MYSQL" = "0" ]; then
     do_install mysql-server
     invoke-rc.d mysql stop
 fi
-do_install php5-cgi
-do_install php5-mysql
-do_install php5-curl
-do_install php5-gd
-do_install php5-mcrypt
-#do_install php5-suhosin
-do_install php5-intl
+
+if [ "${PHP_VER}" = "7.0" ]; then
+    echo "deb http://packages.dotdeb.org ${debian_codename} all" >> /etc/apt/sources.list
+    wget https://www.dotdeb.org/dotdeb.gpg
+    apt-key add dotdeb.gpg
+    apt-get update
+fi
+# installing PHP and it's modules
+do_install php${PHP_VER}-common
+do_install php${PHP_VER}-cli
+do_install php${PHP_VER}-cgi
+do_install php${PHP_VER}-mysql
+do_install php${PHP_VER}-curl
+do_install php${PHP_VER}-gd
+do_install php${PHP_VER}-mcrypt
+do_install php${PHP_VER}-intl
+do_install php${PHP_VER}-json
+do_install php${PHP_VER}-bcmath
+do_install php${PHP_VER}-imap
+do_install php${PHP_VER}-mbstring
+do_install php${PHP_VER}-xml
+if [ "${PHP_VER}" = "7.0" ]; then
+    do_install php${PHP_VER}-opcache
+fi
+if [ "${PHP_VER}" = "5" ]; then
+    do_install php${PHP_VER}-suhosin
+fi
 
 #invoke-rc.d nginx stop
-#invoke-rc.d php5-cgi stop
+#invoke-rc.d php${PHP_VER}-cgi stop
 
 
-cat > /etc/init.d/php5-cgi <<END
+cat > /etc/init.d/php${PHP_VER}-cgi <<END
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          php5-cgi
+# Provides:          php${PHP_VER}-cgi
 # Required-Start:    \$local_fs \$remote_fs \$network
 # Required-Stop:     \$local_fs \$remote_fs \$network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: controls php5-cgi
-# Description:       controls php5-cgi using start-stop-daemon
+# Short-Description: controls php${PHP_VER}-cgi
+# Description:       controls php${PHP_VER}-cgi using start-stop-daemon
 ### END INIT INFO
 
-PHP_CGI="\$(which php5-cgi)"
+PHP_CGI="\$(which php${PHP_VER}-cgi)"
 PHP_CGI_NAME=\`basename \$PHP_CGI\`
 
-#BIND=127.0.0.1:9000
 BIND="/var/run/\${PHP_CGI_NAME}/\${PHP_CGI_NAME}.sock"
 PIDFILE="/var/run/\${PHP_CGI_NAME}.pid"
 USER=www-data
@@ -313,8 +343,8 @@ esac
 exit \$RETVAL
 END
 
-chmod +x /etc/init.d/php5-cgi
-update-rc.d php5-cgi defaults
+chmod +x /etc/init.d/php${PHP_VER}-cgi
+update-rc.d php${PHP_VER}-cgi defaults
 
 if [ -e "/etc/nginx/sites-enabled/default" ];
     then
@@ -360,8 +390,7 @@ location ~ \.php {
     include /etc/nginx/fastcgi_params;
     keepalive_timeout 0;
     fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-    #fastcgi_pass 127.0.0.1:9000;
-    fastcgi_pass unix:/var/run/php5-cgi/php5-cgi.sock;
+    fastcgi_pass unix:/var/run/php${PHP_VER}-cgi/php${PHP_VER}-cgi.sock;
 }
 location = /favicon.ico {
     log_not_found off;
@@ -381,7 +410,7 @@ location ~ /\.ng {
 EOF
 
 invoke-rc.d nginx start
-invoke-rc.d php5-cgi start
+invoke-rc.d php${PHP_VER}-cgi start
 curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
 php "$WWW_ROOT/composer.phar"
 
