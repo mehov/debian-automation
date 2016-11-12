@@ -460,6 +460,15 @@ mysql_admin="$MYSQL_REMO_USER"
 mysql_admin_password="$MYSQL_REMO_PASS"
 
 ### Functions
+restart_nginx() {
+    if [ -e /var/run/nginx.pid ];
+        then
+            command='restart'
+        else
+            command='start'
+        fi
+    invoke-rc.d nginx \$command
+}
 add_alias() {
     aliases=\$aliases" "\$1
     read -p "Enter another alias (leave blank to skip): " newalias
@@ -765,14 +774,7 @@ case "\$action" in
         ;;
 esac
 
-### (Re)start Nginx
-if [ -e /var/run/nginx.pid ];
-    then
-        command='restart'
-    else
-        command='start'
-    fi
-invoke-rc.d nginx \$command
+restart_nginx
 
 EOF
 
