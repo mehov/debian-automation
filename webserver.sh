@@ -21,6 +21,7 @@ PORT_MYSQL_DEFAULT=$(date -u "+%N" | cut -c 8,7)
 PORT_MYSQL_DEFAULT="330${PORT_MYSQL_DEFAULT}"
 FTP_USER="ftp-data"
 WWW_ROOT="/var/www"
+CERTBOT_PATH="/root/certbot-auto"
 
 if [ ! -e "~/random_string.sh" ]; then
 cat > ~/random_string.sh << EOF
@@ -90,17 +91,25 @@ report_append()  {
 
 
 install() {
+
     read -p "Install php7.0? Choosing (n) will install php5 [Y/n]: " PHP7_Yn
-    if [ "$PHP7_Yn" = "" ]; then
+    if [ "${PHP7_Yn}" = "" ]; then
         PHP7_Yn="Y"
     fi
-    if [ "${PHP7_Yn}" = "Y" ]; then
+    if [ "${PHP7_Yn}" = "Y" ] || [ "${PHP7_Yn}" = "y" ]; then
         PHP_VER="7.0"
         # symlink to match the old naming format (see the issue #1)
         ln -s /usr/bin/php-cgi7.0 /usr/bin/php7.0-cgi
     else 
         PHP_VER="5"
     fi
+
+    read -p "Install Letsencrypt Certbot? [Y/n]: " LECertbot_Yn
+    if [ "${LECertbot_Yn}" = "" ]; then
+        LECertbot_Yn="Y"
+    fi
+
+
     cat /dev/null > ~/bonjour.txt
     hostname_old=`hostname`
     if [ "${hostname_old}" = "" ] || [ "${hostname_old}" = "vps" ]; then
@@ -822,6 +831,14 @@ EOF
 chmod +x /etc/init.d/inetutils-ftpd
 invoke-rc.d inetutils-ftpd start
 update-rc.d inetutils-ftpd defaults
+fi
+
+if [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_Yn}" = "y" ]; then
+    # install certbot for letsencrypt
+    # https://certbot.eff.org/all-instructions/#web-hosting-service-nginx
+    wget -O ${CERTBOT_PATH} https://dl.eff.org/certbot-auto
+    chmod a+x ${CERTBOT_PATH}
+    ${CERTBOT_PATH}
 fi
 
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
