@@ -10,6 +10,7 @@ apt-get update # has to be here, even if it fails
 apt-get install -y debian-keyring 
 apt-get install -y debian-archive-keyring
 apt-get update
+apt-get -y upgrade
 apt-get install dialog
 
 PORT_SSH_DEFAULT=$(date -u "+%N" | cut -c 7,8)
@@ -211,6 +212,7 @@ do_install iptables
 do_install make
 do_install sed
 do_install curl
+do_install ca-certificates
 do_install wget
 do_install ntp
 
@@ -235,6 +237,7 @@ do_install php5-curl
 do_install php5-gd
 do_install php5-mcrypt
 #do_install php5-suhosin
+do_install php5-intl
 
 #invoke-rc.d nginx stop
 #invoke-rc.d php5-cgi stop
@@ -379,6 +382,8 @@ EOF
 
 invoke-rc.d nginx start
 invoke-rc.d php5-cgi start
+curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
+php "$WWW_ROOT/composer.phar"
 
 if [ ! "$PORT_MYSQL" = "0" ]; then
     #sed -i 's/#skip-innodb/skip-innodb/g' /etc/mysql/my.cnf
