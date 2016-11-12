@@ -770,9 +770,17 @@ echo "ACTION: \${action}"
 ### What to do?
 case "\$action" in
     "remove")
+        if [ "\$hostname" = "" ]; then
+            echo "Please specify the primary hostname"
+            exit 1;
+        fi
         remove \$hostname
         ;;
     "add")
+        if [ "\$hostname" = "" ]; then
+            echo "Please specify the primary hostname"
+            exit 1;
+        fi
         add \$hostname \$dirname \$database \$alias
         ;;
 esac
