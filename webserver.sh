@@ -23,18 +23,15 @@ FTP_USER="ftp-data"
 WWW_ROOT="/var/www"
 CERTBOT_PATH="/root/certbot-auto"
 
-if [ ! -e "~/random_string.sh" ]; then
-cat > ~/random_string.sh << EOF
-#!/bin/sh
-if [ \$1="-l" ]; then
-        length=\$2
-    else
-        length="8"
-    fi
-echo \`cat /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w \$length | head -1\`
-EOF
-fi
-
+# reusable functions
+random_string() {
+    if [ $1="-l" ]; then
+            length=$2
+        else
+            length="8"
+        fi
+    echo `cat /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w $length | head -1`
+}
 is_installed2() {
     local PKG="$1"
     PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $PKG|grep "install ok installed")
@@ -118,7 +115,7 @@ install() {
             nhostname="+"
         fi
         if [ "$nhostname" = "+" ]; then
-            nhostname=`sh /root/random_string.sh -l 4`
+            nhostname=`random_string -l 4`
             hostname $nhostname
         fi
         if [ "$nhostname" != "" ]; then
@@ -149,7 +146,7 @@ install() {
     fi
 
     if [ ! "$PORT_FTP" = "0" ]; then
-        wdpasswordg=`sh /root/random_string.sh -l 10`
+        wdpasswordg=`random_string -l 10`
         read -p "Enter a new password for user '$FTP_USER' [${wdpasswordg}]: " wdpassword
         if [ "$wdpassword" = "" ]; then
             wdpassword="${wdpasswordg}"
@@ -172,14 +169,14 @@ install() {
     fi
 
     if [ ! "$PORT_MYSQL" = "0" ]; then
-        MYSQL_ROOT_PASS=`sh /root/random_string.sh -l 8`
+        MYSQL_ROOT_PASS=`random_string -l 8`
         read -p "MySQL remote user name: " MYSQL_REMO_USER
         if [ "$MYSQL_REMO_USER" = "" ]; then
-            MYSQL_REMO_USER=`sh /root/random_string.sh -l 8`
+            MYSQL_REMO_USER=`random_string -l 8`
         fi
         read -p "MySQL password for user '$MYSQL_REMO_USER': " MYSQL_REMO_PASS
         if [ "$MYSQL_REMO_PASS" = "" ]; then
-            MYSQL_REMO_PASS=`sh /root/random_string.sh -l 8`
+            MYSQL_REMO_PASS=`random_string -l 8`
         fi
         report_append "PORT_MYSQL" $PORT_MYSQL
         report_append "MYSQL_ROOT_PASS" $MYSQL_ROOT_PASS
@@ -460,6 +457,14 @@ mysql_admin="$MYSQL_REMO_USER"
 mysql_admin_password="$MYSQL_REMO_PASS"
 
 ### Functions
+random_string() {
+    if [ \$1="-l" ]; then
+            length=\$2
+        else
+            length="8"
+        fi
+    echo \`cat /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w \$length | head -1\`
+}
 restart_nginx() {
     if [ -e /var/run/nginx.pid ];
         then
@@ -484,8 +489,8 @@ add() {
         aliases="www.\$1"
     fi
     database_name_random=\`echo \$1 | sed -e 's/\W//g'\`;
-    database_user_random=\`sh /root/random_string.sh -l 8\`
-    database_password_waitforit_random=\`sh /root/random_string.sh -l 12\`
+    database_user_random=\`random_string -l 8\`
+    database_password_waitforit_random=\`random_string -l 12\`
     if [ -z \$4 ]; then
         read -p "Enter alias (leave blank to skip): " alias
         if [ "\$alias" != "" ]; then
@@ -554,7 +559,7 @@ add() {
         if [ "u\${website_user}" = "u" ]; then
             website_user=\${website_user_default}
         fi
-        wdpasswordg=\`sh /root/random_string.sh -l 10\`
+        wdpasswordg=\`random_string -l 10\`
         read -p "Enter a new password for user '\${website_user}' [\${wdpasswordg}]: " wdpassword
         if [ "\$wdpassword" = "" ]; then
             wdpassword="\${wdpasswordg}"
