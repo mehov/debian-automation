@@ -387,13 +387,10 @@ http {
 }
 EOF
 
-cat > /etc/nginx/common.conf << EOF
-listen 80;
+cat > /etc/nginx/snippets/common.conf << EOF
 index  index.php index.html index.htm;
-fastcgi_index index.php;
 location ~ \.php {
-    try_files \$uri =404;
-    include /etc/nginx/fastcgi_params;
+    include snippets/fastcgi-php.conf;
     keepalive_timeout 0;
     fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
     fastcgi_pass unix:/var/run/php${PHP_VER}-cgi/php${PHP_VER}-cgi.sock;
