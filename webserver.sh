@@ -228,6 +228,7 @@ do_install build-essential
 do_install iptables
 do_install make
 do_install sed
+do_install cron
 do_install curl
 do_install ca-certificates
 do_install wget
