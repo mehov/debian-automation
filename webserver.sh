@@ -90,7 +90,7 @@ install() {
         PHP_VER="5"
     fi
 
-    read -p "Install Letsencrypt Certbot? [Y/n]: " LECertbot_Yn
+    read -p "Install the Let's Encrypt Certbot? [Y/n]: " LECertbot_Yn
 
     cat /dev/null > ~/bonjour.txt
     hostname_old=`hostname`
@@ -473,25 +473,34 @@ add_alias() {
 }
 
 create_nginx_host() {
-    # \$1=hostname; \$2=public_dir; \$3=config_dir; \$4=certbot_path_opt
+    # \$1=hostname; \$2=aliases; \$3=public_dir; \$4=config_dir; \$5=certbot_path_opt
 
     cat > "\${sites_available}/\${1}" << EOF
     server {
         listen 80;
-        server_name \$1;
+        server_name \$1 \$2;
         access_log /var/log/nginx/\$1.access.log;
         error_log /var/log/nginx/\$1.error.log;
-        root \$2; # config_path \$3
-        include "\$3/.ngaccess";
+        root \$3; # config_path \$4
+        include "\$4/.ngaccess";
         include "snippets/common.conf";
     }
 EOF
     if ! [ -f "\${sites_enabled}/\$1" ]; then
         ln -s "\${sites_available}/\$1" "\${sites_enabled}/\$1"
     fi
-    if [ ! "\$4" = "" ] && [ -f "\$4" ]; then
+    if [ ! "\$5" = "" ] && [ -f "\$5" ]; then
         restart_nginx # restart so the host goes live and is verifiable
-        \$4 certonly --non-interactive --agree-tos --email "webmaster@\$1" --webroot -w \$2 -d \$1
+        domains="\$1"
+        for alias in \$2; do
+            domains="\${domains},\${alias}"
+        done
+        letsencrypt_email="webmaster@\$1"
+        printf "Requesting a certificate from Let's Encrypt:\n"
+        printf " - email:   \${letsencrypt_email}\n"
+        printf " - webroot: \$3\n"
+        printf " - domains: \${domains}\n"
+        \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "\$3" -d "\${domains}"
         openssl dhparam -out /etc/letsencrypt/live/\$1/dhparam.pem 2048
         head -n -1 "\${sites_available}/\$1" > "\${sites_available}/\$1.tmp"
         mv "\${sites_available}/\$1.tmp" "\${sites_available}/\$1"
@@ -500,11 +509,11 @@ EOF
     }
     server {
         listen 443 ssl;
-        server_name \$1;
+        server_name \$1 \$2;
         access_log /var/log/nginx/\$1.access.log;
         error_log /var/log/nginx/\$1.error.log;
-        root \$2;
-        include "\$3/.ngaccess";
+        root \$3;
+        include "\$4/.ngaccess";
         include "snippets/common.conf";
         ssl on;
         ssl_certificate /etc/letsencrypt/live/\$1/fullchain.pem;
@@ -667,10 +676,10 @@ if (!-f \\\$request_filename) {
         fi
     echo "# FTP p:${PORT_FTP} u:\${website_user} p:\${wdpassword}" >> \${ngaccess_file}
     chown -R \${website_user}:www-data \${site_dir}
-    create_nginx_host \$1 \${public_dir} \${site_dir} \${CERTBOT_PATH_OPT}
-    for alias in \$aliases; do
-        create_nginx_host \$alias \${public_dir} \${site_dir} \${CERTBOT_PATH_OPT}
-    done
+    create_nginx_host "\$1" "\${aliases}" "\${public_dir}" "\${site_dir}" "\${CERTBOT_PATH_OPT}"
+    #for alias in \$aliases; do
+    #    create_nginx_host \$alias \${public_dir} \${site_dir} \${CERTBOT_PATH_OPT}
+    #done
 
     ### MySQL
     if [ "\$create_database" != "n" ] && [ "\$create_database"!="N" ]
@@ -926,8 +935,8 @@ chmod +x /etc/network/if-up.d/iptables
 
 apt-get -y autoremove
 echo "**** All done."
-echo "**** Once again, the new SSH port is: ${PORT_SSH}"
-echo "**** The server is going to reboot. Please reconnect."
+echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
+echo "**** The server will reboot. Please reconnect."
 
 # https://www.veeam.com/kb2061
 echo "KexAlgorithms diffie-hellman-group1-sha1,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1" >> /etc/ssh/sshd_config
