@@ -946,6 +946,7 @@ ssh-keygen -A
 
 sleep 2
 invoke-rc.d ssh restart
+rm $0
 reboot
 }
 
