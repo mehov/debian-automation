@@ -244,9 +244,10 @@ install() {
 
     if [ "${PHP_VER}" = "7.0" ]; then
         echo "deb http://packages.dotdeb.org ${debian_codename} all" >> /etc/apt/sources.list
-        wget https://www.dotdeb.org/dotdeb.gpg
-        apt-key add dotdeb.gpg
+        wget -O /tmp/dotdeb.gpg https://www.dotdeb.org/dotdeb.gpg
+        apt-key add /tmp/dotdeb.gpg
         apt-get update
+        rm /tmp/dotdeb.gpg
     fi
     # installing PHP and it's modules
     do_install php${PHP_VER}-common
