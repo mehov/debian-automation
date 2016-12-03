@@ -689,7 +689,7 @@ if (!-f \\\$request_filename) {
     if [ "\$create_database" != "n" ] && [ "\$create_database"!="N" ]
         then
             \$mysql -uroot -p\$mysql_password -e "CREATE DATABASE \\\`\$database_name\\\`;"
-            \$mysql -uroot -p\$mysql_password -e "GRANT SELECT,INSERT,UPDATE,DELETE ON \$database_name.* TO \$database_user@localhost IDENTIFIED BY '\$database_password';"
+            \$mysql -uroot -p\$mysql_password -e "GRANT CREATE,SELECT,INSERT,UPDATE,DELETE ON \$database_name.* TO \$database_user@localhost IDENTIFIED BY '\$database_password';"
             \$mysql -uroot -p\$mysql_password -e "GRANT ALL ON \$database_name.* TO \$mysql_admin@localhost IDENTIFIED BY '\$mysql_admin_password';"
             printf "Database:\n-name: \$database_name\n-user: \$database_user\n-pass: \$database_password\n"
             echo -n "Config file... "
