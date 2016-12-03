@@ -208,6 +208,8 @@ install() {
     echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
+    echo "export GREP_OPTIONS='--color=always'" >> ~/.bash_profile
+
     export DEBIAN_FRONTEND=noninteractive
     apt-get update # has to be here, even if it fails
     apt-get install -y debian-keyring 
