@@ -227,6 +227,7 @@ install() {
     do_install curl
     do_install ca-certificates
     do_install wget
+    do_install logrotate
     do_install ntp
     do_install tzdata
     echo "UTC" > /etc/timezone
