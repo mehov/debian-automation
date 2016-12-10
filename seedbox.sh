@@ -260,8 +260,14 @@ chown -R $USER:$USER $DIR_BASE
 
 find $DIR_UI/share -type d -exec chmod 0777 {} ';'
 
-printf "Alias /$DIR_UI_PATH $DIR_UI\nAlias /$DIR_DL_NAME $DIR_DL\n<Directory \"$DIR_PUB\">\nAuthType Basic\nAuthName \"Authorization Required\"\nAuthUserFile $DIR_BASE/.htpasswd\nRequire valid-user\n</Directory>" > /etc/apache2/conf-available/$DIR_UI_PATH.conf
-ln -s "/etc/apache2/conf-available/$DIR_UI_PATH.conf" "/etc/apache2/conf-enabled/$DIR_UI_PATH.conf"
+if [ -d /etc/apache2/conf-available ]; then
+    CONF_ALIAS_PATH="/etc/apache2/conf-available/$DIR_UI_PATH.conf"
+    touch $CONF_ALIAS_PATH
+    ln -s "$CONF_ALIAS_PATH" "/etc/apache2/conf-enabled/$DIR_UI_PATH.conf"
+else
+    CONF_ALIAS_PATH="/etc/apache2/conf.d/$DIR_UI_PATH.conf"
+fi
+printf "Alias /$DIR_UI_PATH $DIR_UI\nAlias /$DIR_DL_NAME $DIR_DL\n<Directory \"$DIR_PUB\">\nAuthType Basic\nAuthName \"Authorization Required\"\nAuthUserFile $DIR_BASE/.htpasswd\nRequire valid-user\n</Directory>" > $CONF_ALIAS_PATH
 
 cat > "/etc/apache2/sites-available/$DIR_UI_PATH" <<END
 <VirtualHost *:$PORT_HTTP>
