@@ -36,6 +36,17 @@ sed -i "s/ftp\.debian\.org/httpredir.debian.org/g" /etc/apt/sources.list
 sed -i "s/ftp\.\([a-z]\+\)\.debian\.org/httpredir.debian.org/g" /etc/apt/sources.list
 sed -i "s/main/non-free main/g" /etc/apt/sources.list
 
+# Fix the neighbour table overflow & net_ratelimit errors (#18)
+echo "net.ipv4.neigh.default.gc_interval = 3600" >> /etc/sysctl.conf
+echo "net.ipv4.neigh.default.gc_stale_time = 3600" >> /etc/sysctl.conf
+echo "net.ipv4.neigh.default.gc_thresh3 = 4096" >> /etc/sysctl.conf
+echo "net.ipv4.neigh.default.gc_thresh2 = 2048" >> /etc/sysctl.conf
+echo "net.ipv4.neigh.default.gc_interval = 3600" >> /etc/sysctl.conf
+echo "net.ipv6.neigh.default.gc_stale_time = 3600" >> /etc/sysctl.conf
+echo "net.ipv6.neigh.default.gc_thresh1 = 1024" >> /etc/sysctl.conf
+echo "net.ipv6.neigh.default.gc_thresh3 = 4096" >> /etc/sysctl.conf
+echo "net.ipv6.neigh.default.gc_thresh2 = 2048" >> /etc/sysctl.conf
+echo "net.ipv6.neigh.default.gc_thresh1 = 1024" >> /etc/sysctl.conf
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
