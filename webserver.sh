@@ -351,6 +351,15 @@ END
 chmod +x /etc/init.d/php${PHP_VER}-cgi
 update-rc.d php${PHP_VER}-cgi defaults
 
+if [ ! -d "/etc/nginx/sites-enabled" ]; then
+    mkdir "/etc/nginx/sites-enabled"
+fi
+if [ ! -d "/etc/nginx/sites-available" ]; then
+    mkdir "/etc/nginx/sites-available"
+fi
+if [ ! -d "/etc/nginx/snippets" ]; then
+    mkdir "/etc/nginx/snippets"
+fi
 if [ -e "/etc/nginx/sites-enabled/default" ];
     then
         rm "/etc/nginx/sites-enabled/default"
