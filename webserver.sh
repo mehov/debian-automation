@@ -126,7 +126,7 @@ install() {
     fi
 
     if [ ! "$PORT_FTP" = "0" ]; then
-        wdpasswordg=`random_string -l 10`
+        wdpasswordg=`random_string -l 16`
         read -p "Enter a new password for user '$FTP_USER' [${wdpasswordg}]: " wdpassword
         if [ "$wdpassword" = "" ]; then
             wdpassword="${wdpasswordg}"
@@ -154,8 +154,8 @@ install() {
     fi
 
     if [ ! "$PORT_MYSQL" = "0" ]; then
-        MYSQL_ROOT_PASS=`random_string -l 8`
-        MYSQL_REMO_USER_RAND=`random_string -l 8`
+        MYSQL_ROOT_PASS=`random_string -l 16`
+        MYSQL_REMO_USER_RAND=`random_string -l 16`
         MYSQL_REMO_PASS_RAND=`random_string -l 16`
         read -p "MySQL remote access user name [${MYSQL_REMO_USER_RAND}]: " MYSQL_REMO_USER
         if [ "$MYSQL_REMO_USER" = "" ]; then
@@ -580,8 +580,8 @@ add() {
     fi
     public_dir_name_default="public_html"
     database_name_random=\`echo \$1 | sed -e 's/\W//g'\`;
-    database_user_random=\`random_string -l 8\`
-    database_password_waitforit_random=\`random_string -l 12\`
+    database_user_random=\`random_string -l 16\`
+    database_password_waitforit_random=\`random_string -l 16\`
     if [ -z \$4 ]; then
         read -p "Enter alias (leave blank to skip): " alias
         if [ "\$alias" != "" ]; then
@@ -650,7 +650,7 @@ add() {
         if [ "u\${website_user}" = "u" ]; then
             website_user=\${website_user_default}
         fi
-        wdpasswordg=\`random_string -l 10\`
+        wdpasswordg=\`random_string -l 16\`
         read -p "Enter a new password for user '\${website_user}' [\${wdpasswordg}]: " wdpassword
         if [ "\$wdpassword" = "" ]; then
             wdpassword="\${wdpasswordg}"
