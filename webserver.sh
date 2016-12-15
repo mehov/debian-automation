@@ -271,9 +271,6 @@ install() {
     if [ "${PHP_VER}" = "7.0" ]; then
         do_install php${PHP_VER}-opcache
     fi
-    if [ "${PHP_VER}" = "5" ]; then
-        do_install php${PHP_VER}-suhosin
-    fi
 
     #invoke-rc.d nginx stop
     #invoke-rc.d php${PHP_VER}-cgi stop
