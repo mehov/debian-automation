@@ -478,10 +478,13 @@ add_alias() {
     fi
 }
 
+nginx_vhost_conf_name() {
+    echo "vhost-\${1}.conf"
+}
 create_nginx_host() {
     # \$1=hostname; \$2=aliases; \$3=public_dir; \$4=config_dir; \$5=certbot_path_opt
-
-    cat > "\${sites_available}/\${1}" << EOF
+    conf_file_name=\`nginx_vhost_conf_name \${1}\`
+    cat > "\${sites_available}/\${conf_file_name}" << EOF
     server {
         listen 80;
         server_name \$1 \$2;
@@ -492,8 +495,8 @@ create_nginx_host() {
         include "snippets/common.conf";
     }
 EOF
-    if ! [ -f "\${sites_enabled}/\$1" ]; then
-        ln -s "\${sites_available}/\$1" "\${sites_enabled}/\$1"
+    if ! [ -f "\${sites_enabled}/\${conf_file_name}" ]; then
+        ln -s "\${sites_available}/\${conf_file_name}" "\${sites_enabled}/\${conf_file_name}"
     fi
     if [ ! "\$5" = "" ] && [ -f "\$5" ]; then
         restart_nginx # restart so the host goes live and is verifiable
@@ -508,9 +511,9 @@ EOF
         printf " - domains: \${domains}\n"
         \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "\$3" -d "\${domains}"
         openssl dhparam -out /etc/letsencrypt/live/\$1/dhparam.pem 2048
-        head -n -1 "\${sites_available}/\$1" > "\${sites_available}/\$1.tmp"
-        mv "\${sites_available}/\$1.tmp" "\${sites_available}/\$1"
-        cat >> "\${sites_available}/\$1" << EOF
+        head -n -1 "\${sites_available}/\${conf_file_name}" > "\${sites_available}/\${conf_file_name}.tmp"
+        mv "\${sites_available}/\${conf_file_name}.tmp" "\${sites_available}/\${conf_file_name}"
+        cat >> "\${sites_available}/\${conf_file_name}" << EOF
         return 301 https://\\\$server_name\\\$request_uri;
     }
     server {
@@ -711,11 +714,12 @@ if (!-f \\\$request_filename) {
 }
 remove_nginx_host() {
     # \$1=hostname;
-    if [ -f "\${sites_enabled}/\${1}" ]; then
-        rm "\${sites_enabled}/\${1}"
+    conf_file_name=\`nginx_vhost_conf_name \${1}\`
+    if [ -f "\${sites_enabled}/\${conf_file_name}" ]; then
+        rm "\${sites_enabled}/\${conf_file_name}"
     fi
-    if [ -f "\${sites_available}/\${1}" ]; then
-        rm "\${sites_available}/\${1}"
+    if [ -f "\${sites_available}/\${conf_file_name}" ]; then
+        rm "\${sites_available}/\${conf_file_name}"
     fi
     if [ -d "/etc/letsencrypt/live/\${1}" ]; then
         rm -rf "/etc/letsencrypt/live/\${1}"
@@ -726,7 +730,8 @@ remove_nginx_host() {
 }
 
 remove() {
-    config_nginx="\${sites_available}/\$1"
+    conf_file_name=\`nginx_vhost_conf_name \${1}\`
+    config_nginx="\${sites_available}/\${conf_file_name}"
     if [ -f \$config_nginx ]
         then
             echo ""
