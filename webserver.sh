@@ -266,8 +266,6 @@ install() {
     do_install php${PHP_VER}-json
     do_install php${PHP_VER}-bcmath
     do_install php${PHP_VER}-imap
-    do_install php${PHP_VER}-mbstring
-    do_install php${PHP_VER}-xml
     if [ "${PHP_VER}" = "7.0" ]; then
         do_install php${PHP_VER}-opcache
     fi
