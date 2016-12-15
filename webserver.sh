@@ -393,6 +393,7 @@ http {
             index index.html index.htm;
         }
     }
+    include /etc/nginx/conf.d/*.conf;
     include /etc/nginx/sites-enabled/*;
 }
 EOF
