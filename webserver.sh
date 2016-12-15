@@ -360,10 +360,9 @@ fi
 if [ ! -d "/etc/nginx/snippets" ]; then
     mkdir "/etc/nginx/snippets"
 fi
-if [ -e "/etc/nginx/sites-enabled/default" ];
-    then
-        rm "/etc/nginx/sites-enabled/default"
-    fi
+if [ -e "/etc/nginx/sites-enabled/default" ]; then
+    rm "/etc/nginx/sites-enabled/default"
+fi
 if [ -e "/etc/nginx/conf.d/default.conf" ]; then
     rm "/etc/nginx/conf.d/default.conf"
 fi
