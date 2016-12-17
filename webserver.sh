@@ -237,6 +237,7 @@ install() {
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
+    do_install git
     do_install nginx
     #mkdir /root/nginx && cd /root/nginx && wget http://nginx.org/download/nginx-1.4.0.tar.gz && tar zxf nginx-1.4.0.tar.gz && cd nginx-1.4.0 && ./configure --conf-path=/etc/nginx/nginx.conf --http-log-path=/var/log/nginx/access.log --error-log-path=/var/log/nginx/error.log --pid-path=/var/log/nginx/nginx.pid --user=www-data --group=www-data && make && make install && rm -rf /root/nginx && cd ~
     if [ ! "$PORT_FTP" = "0" ]; then
