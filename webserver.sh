@@ -221,6 +221,7 @@ install() {
 
     do_install build-essential
     #do_install gcc
+    do_install coreutils
     do_install apt-utils
     do_install iptables
     do_install make
