@@ -208,7 +208,15 @@ install() {
     echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
-    echo "export GREP_OPTIONS='--color=always'" >> ~/.bash_profile
+    cat >> /root/.bash_profile << EOF
+export GREP_OPTIONS='--color=always'
+# http://superuser.com/a/664061/111289
+export HISTFILESIZE=
+export HISTSIZE=
+export HISTTIMEFORMAT="[%F %T] "
+export HISTFILE=~/.bash_eternal_history
+PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
+EOF
 
     export DEBIAN_FRONTEND=noninteractive
     apt-get update # has to be here, even if it fails
