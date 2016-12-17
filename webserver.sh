@@ -375,6 +375,7 @@ pid /var/run/nginx.pid;
 events {
     worker_connections ${ULIMIT};
     use epoll;
+    multi_accept on;
 }
 http {
     client_max_body_size 32m;
