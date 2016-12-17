@@ -374,6 +374,7 @@ worker_processes ${CPU_CORES_CNT};
 pid /var/run/nginx.pid;
 events {
     worker_connections ${ULIMIT};
+    use epoll;
 }
 http {
     client_max_body_size 32m;
