@@ -367,12 +367,13 @@ if [ -e "/etc/nginx/conf.d/default.conf" ]; then
 fi
 
 CPU_CORES_CNT=`nproc --all`
+ULIMIT=`ulimit -n`
 cat > /etc/nginx/nginx.conf << EOF
 user www-data;
 worker_processes ${CPU_CORES_CNT};
 pid /var/run/nginx.pid;
 events {
-    worker_connections  1024;
+    worker_connections ${ULIMIT};
 }
 http {
     client_max_body_size 32m;
