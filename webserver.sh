@@ -366,9 +366,10 @@ if [ -e "/etc/nginx/conf.d/default.conf" ]; then
     rm "/etc/nginx/conf.d/default.conf"
 fi
 
+CPU_CORES_CNT=`nproc --all`
 cat > /etc/nginx/nginx.conf << EOF
 user www-data;
-worker_processes  1;
+worker_processes ${CPU_CORES_CNT};
 pid /var/run/nginx.pid;
 events {
     worker_connections  1024;
