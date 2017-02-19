@@ -564,7 +564,10 @@ EOF
         head -n -1 "\${sites_available}/\${conf_file_name}" > "\${sites_available}/\${conf_file_name}.tmp"
         mv "\${sites_available}/\${conf_file_name}.tmp" "\${sites_available}/\${conf_file_name}"
         cat >> "\${sites_available}/\${conf_file_name}" << EOF
-        return 301 https://\\\$server_name\\\$request_uri;
+        location / {
+            return 301 https://\\\$server_name\\\$request_uri;
+        }
+        location /.well-known/acme-challenge/ {}
     }
     server {
         listen 443 ssl;
@@ -586,6 +589,9 @@ EOF
         ssl_stapling on;
         ssl_stapling_verify on;
         add_header Strict-Transport-Security max-age=15768000;
+        location /.well-known/acme-challenge/ {
+            return 301 http://\\\$server_name\\\$request_uri;
+        }
     }
 EOF
         restart_nginx 
