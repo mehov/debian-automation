@@ -3,9 +3,8 @@
 SERVER_IP=`ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.' | grep -v '172.20.1.'`
 echo "SERVER_IP: ${SERVER_IP}"
 
-if ! [ $1 -eq "iptables" ]; then
 apt-get update
-apt-get install pptpd -y
+apt-get install -y pptpd
 update-rc.d pptpd defaults
 
 echo "localip 172.20.1.1" >> /etc/pptpd.conf
@@ -33,37 +32,8 @@ if [ "$password" = "" ]; then
 fi
 echo "${username} * ${password} *" >> /etc/ppp/chap-secrets
 
-service pptpd restart
-
 mkdir -p /dev/net
 mknod /dev/net/tun c 10 200
 chmod 600 /dev/net/tun
 mknod /dev/ppp c 108 0
 chmod 777 /dev/ppp
-
-echo "1" > /proc/sys/net/ipv4/ip_forward
-echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-sysctl -p
-
-fi
-service pptpd restart
-
-#iptables -I INPUT -p tcp --dport 1723 -m state --state NEW -j ACCEPT
-#iptables -I INPUT -p gre -j ACCEPT
-#iptables -t nat -I POSTROUTING -o eth0 -j MASQUERADE
-#iptables -I FORWARD -p tcp --tcp-flags SYN,RST SYN -s 172.20.1.0/24 -j TCPMSS  
-
-iptables -F -t nat
-
-iptables -A FORWARD -i venet0 -o ppp0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-iptables -A FORWARD -i ppp0 -o venet0 -j ACCEPT
-iptables -t nat -A POSTROUTING -j SNAT --to-source $SERVER_IP
-
-#iptables -P FORWARD ACCEPT
-#iptables -I INPUT -p tcp --dport 1723 -m state --state NEW -j ACCEPT
-#iptables -I INPUT -p gre -j ACCEPT
-#iptables -t nat -A POSTROUTING -s 172.20.1.0/24 -o venet0:0 -j SNAT --to-source $SERVER_IP
-#iptables -t nat -A POSTROUTING -s 172.20.1.0/24 -o venet0:0 -j SNAT --to $SERVER_IP
-
-
-iptables-save
