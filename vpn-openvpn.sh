@@ -71,3 +71,11 @@ rm -rf ${CONF_CLIENT_DIR}
 sed -i 's,#\(AUTOSTART="all"\),\1,' /etc/default/openvpn
 systemctl enable openvpn.service
 systemctl start openvpn.service
+
+cat > /etc/network/if-up.d/vpn-iptables << EOF
+#!/bin/sh
+
+iptables -t nat -A POSTROUTING -j SNAT --to-source ${SERVER_IP}
+echo "1" > /proc/sys/net/ipv4/ip_forward
+EOF
+chmod +x /etc/network/if-up.d/vpn-iptables
