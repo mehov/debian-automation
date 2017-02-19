@@ -42,6 +42,7 @@ chmod 777 /dev/ppp
 
 iptables -t nat -A POSTROUTING -j SNAT --to-source ${SERVER_IP}
 iptables-save > /etc/iptables/rules.v4
+echo "1" > /proc/sys/net/ipv4/ip_forward
 
 cat > /etc/network/if-up.d/vpn-pptp << EOF
 #!/bin/sh
