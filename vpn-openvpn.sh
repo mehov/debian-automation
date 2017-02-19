@@ -68,3 +68,6 @@ cd "${CONF_CLIENT_DIR}/../"
 tar -czf $SERVER_IP.tar.gz $SERVER_IP
 rm -rf ${CONF_CLIENT_DIR}
 
+sed -i 's,#\(AUTOSTART="all"\),\1,' /etc/default/openvpn
+systemctl enable openvpn.service
+systemctl start openvpn.service
