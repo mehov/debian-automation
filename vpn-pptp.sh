@@ -12,7 +12,26 @@ echo "localip 172.20.1.1" >> /etc/pptpd.conf
 echo "remoteip 172.20.1.2-254" >> /etc/pptpd.conf
 echo "ms-dns 8.8.8.8" >> /etc/ppp/pptpd-options
 echo "ms-dns 8.8.4.4" >> /etc/ppp/pptpd-options
-echo "username * Pa55w0rd *" >> /etc/ppp/chap-secrets
+
+random_string() {
+    if [ $1="-l" ]; then
+            length=$2
+        else
+            length="8"
+        fi
+    echo `cat /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w $length | head -1`
+}
+username_rand=`random_string -l 5`
+read -p "User [${username_rand}]: " username
+if [ "$username" = "" ]; then
+    username="${username_rand}"
+fi
+password_rand=`random_string -l 7`
+read -p "Password [${password_rand}]: " password
+if [ "$password" = "" ]; then
+    password="${password_rand}"
+fi
+echo "${username} * ${password} *" >> /etc/ppp/chap-secrets
 
 service pptpd restart
 
