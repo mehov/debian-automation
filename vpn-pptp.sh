@@ -4,7 +4,7 @@ SERVER_IP=`ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([
 echo "SERVER_IP: ${SERVER_IP}"
 
 apt-get update
-apt-get install -y pptpd
+apt-get install -y pptpd iptables iptables-persistent
 update-rc.d pptpd defaults
 
 echo "localip 172.20.1.1" >> /etc/pptpd.conf
@@ -37,3 +37,13 @@ mknod /dev/net/tun c 10 200
 chmod 600 /dev/net/tun
 mknod /dev/ppp c 108 0
 chmod 777 /dev/ppp
+
+iptables -t nat -A POSTROUTING -j SNAT --to-source ${SERVER_IP}
+iptables-save > /etc/iptables/rules.v4
+
+cat > /etc/network/if-up.d/vpn-pptp << EOF
+#!/bin/sh
+
+echo "1" > /proc/sys/net/ipv4/ip_forward
+EOF
+chmod +x /etc/network/if-up.d/vpn-pptp
