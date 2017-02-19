@@ -3,8 +3,9 @@
 SERVER_IP=`ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.' | grep -v '172.20.1.'`
 echo "SERVER_IP: ${SERVER_IP}"
 
+export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y pptpd iptables iptables-persistent
+apt-get install -yq pptpd iptables iptables-persistent
 systemctl enable pptpd.service
 systemctl start pptpd.service
 
