@@ -5,7 +5,8 @@ echo "SERVER_IP: ${SERVER_IP}"
 
 apt-get update
 apt-get install -y pptpd iptables iptables-persistent
-update-rc.d pptpd defaults
+systemctl enable pptpd.service
+systemctl start pptpd.service
 
 echo "localip 172.20.1.1" >> /etc/pptpd.conf
 echo "remoteip 172.20.1.2-254" >> /etc/pptpd.conf
