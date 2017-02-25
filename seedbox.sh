@@ -331,6 +331,8 @@ invoke-rc.d rtorrent restart
 apt-get clean
 apt-get autoremove
 
+echo "0 4 1,15 * * root ${PATH_CERTBOT} renew && service apache2 restart >> /var/log/certupdate.log 2>&1" > /etc/cron.d/certupdate
+
 echo "**** The new SSH port is: ${PORT_SSH}"
 echo "**** The new HTTP port is: ${PORT_HTTP}"
 invoke-rc.d ssh restart
