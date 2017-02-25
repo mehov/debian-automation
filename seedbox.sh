@@ -8,10 +8,14 @@ DIR_DL_NAME="downloads"
 DIR_DL="$DIR_PUB/$DIR_DL_NAME"
 DIR_UI_PATH="webui"
 DIR_UI="$DIR_PUB/$DIR_UI_PATH"
+PATH_CERTBOT="/root/certbot-auto"
+DIR_CERTBOT="/var/www/certbot-verification"
+DIR_HTTPD_LOG="/var/log/apache2"
 
 echo "YOU WILL USE THESE TO LOG IN TO THE WEB UI"
 read -p "htpasswd username: " htpasswd_user
 read -p "htpasswd password: " htpasswd_pass
+read -p "seedbox domain name: " hostname
 
 PORT_SCGI=$(date -u "+%N" | cut -c 6,7,8)
 PORT_SCGI="5${PORT_SCGI}"
@@ -58,11 +62,15 @@ apt-get update
 apt-get remove libxmlrpc-c*
 apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" gcc g++ build-essential ca-certificates curl apache2 libapache2-mod-scgi php5 php5-xmlrpc php5-cli rtorrent screen mediainfo libav-tools unrar unzip 
 
+# https://certbot.eff.org/all-instructions/#debian-7-wheezy-apache
+wget -O ${PATH_CERTBOT} https://dl.eff.org/certbot-auto
+chmod a+x ${PATH_CERTBOT}
+
 printf "SCGIMount \"/RPC2\" 127.0.0.1:${PORT_SCGI}">/etc/apache2/mods-available/scgi.conf
 
 ln -s /etc/apache2/mods-available/scgi.conf /etc/apache2/mods-enabled/ 
 ln -s /etc/apache2/mods-available/scgi.load /etc/apache2/mods-enabled/
-
+a2enmod ssl
 
 cat > /etc/init.d/rtorrent <<END
 #!/bin/sh
@@ -269,23 +277,54 @@ else
 fi
 printf "Alias /$DIR_UI_PATH $DIR_UI\nAlias /$DIR_DL_NAME $DIR_DL\n<Directory \"$DIR_PUB\">\nAuthType Basic\nAuthName \"Authorization Required\"\nAuthUserFile $DIR_BASE/.htpasswd\nRequire valid-user\n</Directory>" > $CONF_ALIAS_PATH
 
+EMAIL_ADMIN="webmaster@${hostname}"
 cat > "/etc/apache2/sites-available/$DIR_UI_PATH" <<END
-<VirtualHost *:$PORT_HTTP>
-	ServerAdmin webmaster@localhost
-	DocumentRoot /var/www
-	ErrorLog \${APACHE_LOG_DIR}/$DIR_UI_PATH.error.log
+<VirtualHost *:80>
+	ServerName $hostname
+	ServerAdmin $EMAIL_ADMIN
+	DocumentRoot $DIR_CERTBOT
+	ErrorLog $DIR_HTTPD_LOG/certbot-verification.error.log
 	LogLevel warn
-	CustomLog \${APACHE_LOG_DIR}/$DIR_UI_PATH.access.log combined
+	CustomLog $DIR_HTTPD_LOG/certbot-verification.access.log combined
 </VirtualHost>
 END
+rm /etc/apache2/sites-enabled/*
 ln -s "/etc/apache2/sites-available/$DIR_UI_PATH" "/etc/apache2/sites-enabled/$DIR_UI_PATH"
+
+## NOW GET THE SSL CERT
+if [ ! -d "$DIR_CERTBOT" ]; then
+    mkdir "$DIR_CERTBOT"
+fi
+invoke-rc.d apache2 restart
+printf "Requesting a certificate from Let's Encrypt:\n"
+printf " - email:   $EMAIL_ADMIN\n"
+printf " - domains: $hostname\n"
+$PATH_CERTBOT certonly --non-interactive --agree-tos --email "$EMAIL_ADMIN" --webroot -w "$DIR_CERTBOT" -d "$hostname"
+openssl dhparam -out /etc/letsencrypt/live/$hostname/dhparam.pem 1024
+cat >> "/etc/apache2/sites-available/$DIR_UI_PATH" <<END
+<IfModule mod_ssl.c>
+<VirtualHost *:$PORT_HTTP>
+	ServerName $hostname
+	ServerAdmin $EMAIL_ADMIN
+	DocumentRoot /var/www
+	ErrorLog $DIR_HTTPD_LOG/$DIR_UI_PATH.error.log
+	LogLevel warn
+	CustomLog $DIR_HTTPD_LOG/$DIR_UI_PATH.access.log combined
+	SSLEngine on
+	SSLCertificateFile /etc/letsencrypt/live/$hostname/fullchain.pem
+	SSLCertificateKeyFile /etc/letsencrypt/live/$hostname/privkey.pem
+</VirtualHost>
+</IfModule>
+END
+
 
 htpasswd -c -b "${DIR_BASE}/.htpasswd" $htpasswd_user $htpasswd_pass
 rm "${DIR_UI}/.htaccess"
 
 sed -i "s/scgi_port = 5000/scgi_port = $PORT_SCGI/g" $DIR_UI/conf/config.php
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
-sed -i "s/80/$PORT_HTTP/g" /etc/apache2/ports.conf
+echo "Listen ${PORT_HTTP}" >> /etc/apache2/ports.conf
+echo "NameVirtualHost *:${PORT_HTTP}" >> /etc/apache2/ports.conf
 
 invoke-rc.d apache2 restart
 invoke-rc.d rtorrent restart
