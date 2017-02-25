@@ -68,8 +68,7 @@ chmod a+x ${PATH_CERTBOT}
 
 printf "SCGIMount \"/RPC2\" 127.0.0.1:${PORT_SCGI}">/etc/apache2/mods-available/scgi.conf
 
-ln -s /etc/apache2/mods-available/scgi.conf /etc/apache2/mods-enabled/ 
-ln -s /etc/apache2/mods-available/scgi.load /etc/apache2/mods-enabled/
+a2enmod scgi
 a2enmod ssl
 
 cat > /etc/init.d/rtorrent <<END
