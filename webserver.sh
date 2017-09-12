@@ -394,6 +394,7 @@ http {
     charset utf-8;
     sendfile on;
     keepalive_timeout 65;
+    server_tokens off;
     server {
         server_name _;#default
         return 444;
