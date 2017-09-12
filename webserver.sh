@@ -456,10 +456,10 @@ location = /robots.txt {
     access_log off;
 }
 location ~ /\.ht {
-    deny all;
+    return 404;
 }
 location ~ /\.ng {
-    deny all;
+    return 404;
 }
 location ~* \.(ini)$ {
     return 404;
