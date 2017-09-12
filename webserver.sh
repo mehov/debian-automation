@@ -613,7 +613,7 @@ add() {
     database_password_waitforit_random=\`random_string -l 16\`
     if [ -z \$4 ]; then
         read -p "Enter alias (leave blank to skip): " alias
-        if [ "\$alias" != "" ]; then
+        if [ "\$alias" != "" ] && [ "\$alias" != "n" ] && [ "\$alias" != "N" ]; then
             add_alias \$alias
         fi
     else
