@@ -836,7 +836,7 @@ remove() {
 
 certbot_update_all() {
     ${CERTBOT_PATH} renew
-    service nginx restart
+    (sleep 3600 && service nginx restart)&
 }
 
 if [ -z \$# ] && [ \$# -gt 0 ]; then
