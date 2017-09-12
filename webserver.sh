@@ -540,6 +540,7 @@ create_nginx_host() {
     server {
         listen 80;
         server_name \$1 \$2;
+        index index.php index.html index.htm;
         access_log /var/log/nginx/\$1.access.log;
         error_log /var/log/nginx/\$1.error.log;
         root \$3; # config_path \$4
@@ -574,6 +575,7 @@ EOF
     server {
         listen 443 ssl;
         server_name \$1 \$2;
+        index index.php index.html index.htm;
         access_log /var/log/nginx/\$1.access.log;
         error_log /var/log/nginx/\$1.error.log;
         root \$3;
