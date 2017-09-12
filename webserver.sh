@@ -754,7 +754,7 @@ if (!-f \\\$request_filename) {
             \$mysql -uroot -p\$mysql_password -e "GRANT ALL ON \$database_name.* TO \$mysql_admin@localhost IDENTIFIED BY '\$mysql_admin_password';"
             printf "Database:\n-name: \$database_name\n-user: \$database_user\n-pass: \$database_password\n"
             echo -n "Config file... "
-            config_file=\$site_dir"/config.php"
+            config_file=\$site_dir"/config_spanel.php"
             if ! touch \$config_file
                 then
                     echo "ERROR (creating)."
