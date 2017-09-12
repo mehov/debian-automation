@@ -235,6 +235,7 @@ EOF
     do_install make
     do_install sed
     do_install cron
+    do_install systemd
     do_install curl
     do_install ca-certificates
     do_install easy-rsa
