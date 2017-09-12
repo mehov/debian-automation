@@ -237,6 +237,7 @@ EOF
     do_install cron
     do_install curl
     do_install ca-certificates
+    do_install easy-rsa
     do_install wget
     do_install logrotate
     do_install ntp
