@@ -461,6 +461,9 @@ location ~ /\.ht {
 location ~ /\.ng {
     deny all;
 }
+location ~* \.(ini)$ {
+    return 404;
+}
 EOF
 
 invoke-rc.d nginx start
