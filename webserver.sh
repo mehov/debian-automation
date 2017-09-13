@@ -1032,9 +1032,6 @@ EOF
 chmod +x /etc/network/if-up.d/iptables 
 
 apt-get -y autoremove
-echo "**** All done."
-echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
-echo "**** The server will reboot. Please reconnect."
 
 # https://www.veeam.com/kb2061
 echo "" >> /etc/ssh/sshd_config
@@ -1045,7 +1042,15 @@ ssh-keygen -A
 sleep 2
 invoke-rc.d ssh restart
 rm $0
-reboot
+
+echo "**** All done."
+echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
+if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
+    echo "**** Reminder: add your SSH pubkey NOW, use vi /home/${SSH_USER}/.ssh/authorized_keys"
+else
+    echo "**** The server will reboot. Please reconnect."
+    reboot
+fi
 }
 
 case "$1" in
