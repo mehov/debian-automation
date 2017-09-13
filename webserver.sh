@@ -9,6 +9,7 @@ PORT_FTP_DEFAULT=$(date -u "+%N" | cut -c 6,7)
 PORT_FTP_DEFAULT="210${PORT_FTP_DEFAULT}"
 PORT_MYSQL_DEFAULT=$(date -u "+%N" | cut -c 8,7)
 PORT_MYSQL_DEFAULT="330${PORT_MYSQL_DEFAULT}"
+SSH_USER_DEFAULT="admin"
 FTP_USER="ftp-data"
 WWW_ROOT="/var/www"
 CERTBOT_PATH="/root/certbot-auto"
@@ -109,7 +110,16 @@ install() {
     else
         nhostname="${hostname_old}"
     fi
-    
+
+    read -p "Disable root login [Y/n]: " noroot_Yn
+    if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
+        read -p "SSH non-root user [${SSH_USER_DEFAULT}]: " SSH_USER
+        if [ "$SSH_USER" = "" ]; then
+            SSH_USER=$SSH_USER_DEFAULT
+        fi
+        report_append "SSH_USER" $SSH_USER
+    fi
+
     read -p "SSH port [default=${PORT_SSH_DEFAULT}]: " PORT_SSH
     if [ "$PORT_SSH" = "" ]; then
         PORT_SSH=$PORT_SSH_DEFAULT
@@ -977,7 +987,31 @@ if [ "${LECertbot_Yn}" = "" ] ||  [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_
     echo "0 4 1,15 * * root ${HOSTMANAGER_PATH} certupdate >> /var/log/certupdate.log 2>&1" > /etc/cron.d/certupdate
 fi
 
+# Update the SSH port
+sed -i "s/#Port/Port/g" /etc/ssh/sshd_config
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
+if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
+    # Disable root login
+    sed -i "s/#PermitRootLogin/PermitRootLogin/g" /etc/ssh/sshd_config
+    sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" /etc/ssh/sshd_config
+    # Disable password authentication
+    sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" /etc/ssh/sshd_config
+    sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config
+    # Enable key-based authentication
+    sed -i "s/#PubkeyAuthentication/PubkeyAuthentication/g" /etc/ssh/sshd_config
+    sed -i "s/PubkeyAuthentication no/PubkeyAuthentication yes/g" /etc/ssh/sshd_config
+    # Disable empty passwords
+    sed -i "s/#PermitEmptyPasswords/PermitEmptyPasswords/g" /etc/ssh/sshd_config
+    sed -i "s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g" /etc/ssh/sshd_config
+    # Whitelist the non-SSH user
+    echo "AllowUsers ${SSH_USER}" >> /etc/ssh/sshd_config
+    useradd -md "/home/${SSH_USER}" -g sudo $SSH_USER
+    mkdir -p "/home/${SSH_USER}/.ssh"
+    echo "" > "/home/${SSH_USER}/.ssh/authorized_keys"
+    chown -R ${SSH_USER}:www-data $WWW_ROOT
+fi
+
+
 #/usr/bin/ssh-keygen -A
 
 #iptables -A INPUT -s 8.8.1.1/16 -p tcp --dport ${PORT_SSH} -j ACCEPT
