@@ -111,7 +111,7 @@ install() {
         nhostname="${hostname_old}"
     fi
 
-    read -p "Disable root login [Y/n]: " noroot_Yn
+    read -p "Disable root login? You'll need to have your SSH key ready at the end of this setup and add it to the server so that it lets you in next time you connect. You won't be able to use the root account and password to log in anymore. Choosing 'n' will keep the root access [Y/n]: " noroot_Yn
     if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
         read -p "SSH non-root user [${SSH_USER_DEFAULT}]: " SSH_USER
         if [ "$SSH_USER" = "" ]; then
