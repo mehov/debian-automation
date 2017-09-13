@@ -1045,7 +1045,7 @@ rm $0
 echo "**** All done."
 echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
 if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
-    echo "**** Reminder: add your SSH pubkey NOW, use vi /home/${SSH_USER}/.ssh/authorized_keys"
+    echo "**** Reminder: add your SSH public key NOW, use vi /home/${SSH_USER}/.ssh/authorized_keys"
 else
     echo "**** The server will reboot. Please reconnect."
     reboot
