@@ -189,17 +189,7 @@ install() {
     do_uninstall mysql
 
     debian_version=`cat /etc/debian_version | sed -r 's/\..*//'`
-    case $debian_version in
-        "6")
-            debian_codename="squeeze"
-        ;;
-        "7")
-            debian_codename="wheezy"
-        ;;
-        "8")
-            debian_codename="jessie"
-        ;;
-    esac
+    debian_codename=$(lsb_release -sc)
     cat /dev/null > /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename} main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename}-backports main contrib non-free" >> /etc/apt/sources.list
