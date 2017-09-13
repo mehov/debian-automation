@@ -396,16 +396,13 @@ http {
     keepalive_timeout 65;
     server_tokens off;
     server {
-        server_name _;#default
+        server_name _;
+        listen 80 default_server;
+        #todo: add https support
+        #listen 443 default_server;
+        #ssl_certificate /etc/nginx/00-default.crt;
+        #ssl_certificate_key /etc/nginx/00-default.key;
         return 444;
-    }
-    server {
-        listen 80;
-        server_name localhost;
-        location / {
-            root $WWW_ROOT;
-            index index.html index.htm;
-        }
     }
     gzip on;
     gzip_disable "msie6";
