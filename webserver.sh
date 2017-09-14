@@ -547,8 +547,8 @@ create_nginx_host() {
         access_log /var/log/nginx/\$1.access.log;
         error_log /var/log/nginx/\$1.error.log;
         root \$3; # config_path \$4
-        include "\$4/.ngaccess";
         include "snippets/common.conf";
+        include "\$4/.ngaccess";
     }
 EOF
     if ! [ -f "\${sites_enabled}/\${conf_file_name}" ]; then
@@ -567,7 +567,9 @@ EOF
         printf " - domains: \${domains}\n"
         \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "\$3" -d "\${domains}"
         openssl dhparam -out /etc/letsencrypt/live/\$1/dhparam.pem 2048
-        head -n -1 "\${sites_available}/\${conf_file_name}" > "\${sites_available}/\${conf_file_name}.tmp"
+        # cut -2 lines from the end of file (.ngaccess inclusion and closing bracket)
+        # so that we can later append further configuration to this directive
+        head -n -2 "\${sites_available}/\${conf_file_name}" > "\${sites_available}/\${conf_file_name}.tmp"
         mv "\${sites_available}/\${conf_file_name}.tmp" "\${sites_available}/\${conf_file_name}"
         cat >> "\${sites_available}/\${conf_file_name}" << EOF
         location / {
