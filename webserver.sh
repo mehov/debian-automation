@@ -112,7 +112,10 @@ install() {
     fi
 
     read -p "Disable root login? You'll need to have your SSH key ready at the end of this setup and add it to the server so that it lets you in next time you connect. You won't be able to use the root account and password to log in anymore. Choosing 'n' will keep the root access [Y/n]: " noroot_Yn
-    if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
+    if [ "${noroot_Yn}" = "" ]; then
+        noroot_Yn="Y"
+    fi
+    if [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "y" ]; then
         read -p "SSH non-root user [${SSH_USER_DEFAULT}]: " SSH_USER
         if [ "$SSH_USER" = "" ]; then
             SSH_USER=$SSH_USER_DEFAULT
@@ -987,7 +990,7 @@ fi
 # Update the SSH port
 sed -i "s/#Port/Port/g" /etc/ssh/sshd_config
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
-if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
+if [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "y" ]; then
     # Disable root login
     sed -i "s/#PermitRootLogin/PermitRootLogin/g" /etc/ssh/sshd_config
     sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" /etc/ssh/sshd_config
