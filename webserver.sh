@@ -732,9 +732,8 @@ add() {
                     echo "ERROR (creating)."
                 else
                     if ! echo "#this is the part of the main nginx config
-if (!-f \\\$request_filename) {
-    # put your rewrite rules here
-    #rewrite  ^(.*)\\$ /index.php break;
+location / {
+    try_files \\\$uri \\\$uri/ /index.php?\\\$args;
 }" > \$ngaccess_file
                         then
                             echo "ERROR (writing)."
