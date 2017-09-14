@@ -1031,7 +1031,8 @@ if [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "y" ]; then
     echo "AllowUsers ${SSH_USER}" >> /etc/ssh/sshd_config
     useradd -md "/home/${SSH_USER}" -g sudo $SSH_USER
     mkdir -p "/home/${SSH_USER}/.ssh"
-    echo "" > "/home/${SSH_USER}/.ssh/authorized_keys"
+    read -p "Please paste your public key here: " SSH_USER_PUBKEY
+    echo ${SSH_USER_PUBKEY} > /home/${SSH_USER}/.ssh/authorized_keys
     chown -R ${SSH_USER}:www-data $WWW_ROOT
 fi
 # https://www.veeam.com/kb2061
