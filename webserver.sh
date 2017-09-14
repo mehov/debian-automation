@@ -1044,6 +1044,10 @@ ssh-keygen -A
 
 #/usr/bin/ssh-keygen -A
 
+echo "**** All done."
+echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
+echo "**** The server will reboot."
+
 #iptables -A INPUT -s 8.8.1.1/16 -p tcp --dport ${PORT_SSH} -j ACCEPT
 #iptables -A OUTPUT -d 8.8.1.1/16 -p tcp --sport ${PORT_SSH} -j ACCEPT
 #iptables -A INPUT -p tcp --dport ${PORT_SSH} -j DROP
@@ -1062,19 +1066,9 @@ EOF
 chmod +x /etc/network/if-up.d/iptables 
 
 apt-get -y autoremove
-
-sleep 2
-invoke-rc.d ssh restart
 rm $0
 
-echo "**** All done."
-echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
-if [ "${noroot_Yn}" = "Y" ] ||  [ "${noroot_Yn}" = "y" ]; then
-    echo "**** Reminder: add your SSH public key NOW, use vi /home/${SSH_USER}/.ssh/authorized_keys"
-else
-    echo "**** The server will reboot. Please reconnect."
-    reboot
-fi
+reboot
 }
 
 case "$1" in
