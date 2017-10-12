@@ -18,6 +18,12 @@ MYSQL="$(which mysql)"
 MYSQLDUMP="$(which mysqldump)"
 GZIP="$(which gzip)"
 
+### Check if FTP is installed
+if [ -z "${FTP}" ]; then
+    apt-get update
+    apt-get install ftp
+fi
+
 ## Time format YYYYMMDDHHIISS ###
 NOW=$(date +%Y-%m-%d_%H-%M-%S)
 
