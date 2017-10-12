@@ -42,11 +42,11 @@ cd /var/log && $TAR -czpf $TMP_BACKUP_DIR/my-var-log.tgz *
 cd /root && $TAR -czpf $TMP_BACKUP_DIR/root.tgz *
 
 ### MySQL ###
+FILEDIR="$TMP_BACKUP_DIR/my-databases"
+mkdir "$FILEDIR"
 DATABASES="$($MYSQL -u$MYSQLU -h $MYSQLS -p$MYSQLP -Bse 'show databases;')"
 for db in $DATABASES
   do
-    FILEDIR="$TMP_BACKUP_DIR/my-databases"
-    mkdir "$FILEDIR"
     FILE="$FILEDIR/$db.sql.gz"
     $MYSQLDUMP --add-drop-table --allow-keywords -q -c -u "$MYSQLU" -h "$MYSQLS" -p$MYSQLP "$db" $i | $GZIP -9 > "$FILE"
 done
