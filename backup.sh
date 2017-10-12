@@ -37,7 +37,7 @@ dpkg --get-selections "*" > $TMP_BACKUP_DIR/my-dpkg-selections.txt
 # Examples #
 cd /etc && $TAR -czpf $TMP_BACKUP_DIR/my-etc.tgz *
 cd /var/lib/dpkg && $TAR -czpf $TMP_BACKUP_DIR/my-var-lib-dpkg.tgz *
-cd /var/www && $TAR -czpvf $TMP_BACKUP_DIR/www.tgz --exclude=*/cache/* --exclude=*/tmp/* *
+cd /var/www && $TAR -czpvf $TMP_BACKUP_DIR/www.tgz --exclude=*/.git/* --exclude=*/cache/* --exclude=*/tmp/* *
 cd /var/log && $TAR -czpf $TMP_BACKUP_DIR/my-var-log.tgz *
 cd /root && $TAR -czpf $TMP_BACKUP_DIR/root.tgz *
 
