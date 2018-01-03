@@ -80,18 +80,32 @@ report_append()  {
 
 
 install() {
-    read -p "Install php7.0? Choosing (n) will install php5 [Y/n]: " PHP7_Yn
-    if [ "${PHP7_Yn}" = "" ] ||  [ "${PHP7_Yn}" = "Y" ] || [ "${PHP7_Yn}" = "y" ]; then
-        PHP_VER="7.0"
-        # symlink to match the old naming format (see the issue #1)
-        if [ ! -L /usr/bin/php7.0-cgi ]; then
-            ln -s /usr/bin/php-cgi7.0 /usr/bin/php7.0-cgi
+    read -p "Install Nginx? [Y/n]: " NGINX_Yn
+    if [ "${NGINX_Yn}" = "" ] ||  [ "${NGINX_Yn}" = "Y" ] || [ "${NGINX_Yn}" = "y" ]; then
+        PORT_HTTP="80"
+    else 
+        PORT_HTTP="0"
+    fi
+    read -p "Install PHP? [Y/n]: " PHP_Yn
+    if [ "${PHP_Yn}" = "" ] ||  [ "${PHP_Yn}" = "Y" ] || [ "${PHP_Yn}" = "y" ]; then
+        read -p "Install php7.0? Choosing (n) will install php5 [Y/n]: " PHP7_Yn
+        if [ "${PHP7_Yn}" = "" ] ||  [ "${PHP7_Yn}" = "Y" ] || [ "${PHP7_Yn}" = "y" ]; then
+            PHP_VER="7.0"
+            # symlink to match the old naming format (see the issue #1)
+            if [ ! -L /usr/bin/php7.0-cgi ]; then
+                ln -s /usr/bin/php-cgi7.0 /usr/bin/php7.0-cgi
+            fi
+        else 
+            PHP_VER="5"
         fi
     else 
-        PHP_VER="5"
+        PHP_VER="0"
     fi
 
-    read -p "Install the Let's Encrypt Certbot? [Y/n]: " LECertbot_Yn
+    LECertbot_Yn="n"
+    if [ ! "$PORT_HTTP" = "0" ]; then
+        read -p "Install the Let's Encrypt Certbot? [Y/n]: " LECertbot_Yn
+    fi
 
     cat /dev/null > ~/bonjour.txt
     hostname_old=`hostname`
@@ -134,7 +148,7 @@ install() {
         PORT_FTP=$PORT_FTP_DEFAULT
     fi
 
-    if ! [ -d $WWW_ROOT ]; then
+    if [ ! "$PORT_HTTP" = "0" ] && [ ! -d $WWW_ROOT ]; then
         mkdir $WWW_ROOT
     fi
 
@@ -207,8 +221,10 @@ install() {
     echo "deb http://httpredir.debian.org/debian ${debian_codename} main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename}-backports main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://security.debian.org/ ${debian_codename}/updates main contrib non-free" >> /etc/apt/sources.list
-    echo "deb http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
-    echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
+    if [ ! "$PORT_HTTP" = "0" ]; then
+        echo "deb http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
+        echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
+    fi
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
     cat >> /root/.bash_profile << EOF
@@ -252,8 +268,9 @@ EOF
     #do_install libpcre3-dev
     #do_install zlib1g-dev
     do_install git
-    do_install nginx
-    #mkdir /root/nginx && cd /root/nginx && wget http://nginx.org/download/nginx-1.4.0.tar.gz && tar zxf nginx-1.4.0.tar.gz && cd nginx-1.4.0 && ./configure --conf-path=/etc/nginx/nginx.conf --http-log-path=/var/log/nginx/access.log --error-log-path=/var/log/nginx/error.log --pid-path=/var/log/nginx/nginx.pid --user=www-data --group=www-data && make && make install && rm -rf /root/nginx && cd ~
+    if [ ! "$PORT_HTTP" = "0" ]; then
+        do_install nginx
+    fi
     if [ ! "$PORT_FTP" = "0" ]; then
         do_install inetutils-ftpd
     fi
@@ -262,36 +279,32 @@ EOF
         invoke-rc.d mysql stop
     fi
 
-    if [ "${PHP_VER}" = "7.0" ]; then
-        echo "deb http://packages.dotdeb.org ${debian_codename} all" >> /etc/apt/sources.list
-        wget -O /tmp/dotdeb.gpg https://www.dotdeb.org/dotdeb.gpg
-        apt-key add /tmp/dotdeb.gpg
-        apt-get update
-        rm /tmp/dotdeb.gpg
-    fi
-    # installing PHP and it's modules
-    do_install php${PHP_VER}-common
-    do_install php${PHP_VER}-cli
-    do_install php${PHP_VER}-cgi
-    do_install php${PHP_VER}-mysql
-    do_install php${PHP_VER}-curl
-    do_install php${PHP_VER}-gd
-    do_install php${PHP_VER}-mcrypt
-    do_install php${PHP_VER}-intl
-    do_install php${PHP_VER}-json
-    do_install php${PHP_VER}-bcmath
-    do_install php${PHP_VER}-imap
-    if [ "${PHP_VER}" = "7.0" ]; then
-        do_install php${PHP_VER}-mbstring
-        do_install php${PHP_VER}-xml
-        do_install php${PHP_VER}-opcache
-    fi
-
-    #invoke-rc.d nginx stop
-    #invoke-rc.d php${PHP_VER}-cgi stop
-
-
-cat > /etc/init.d/php${PHP_VER}-cgi <<END
+    if [ ! "${PHP_VER}" = "0" ]; then
+        if [ "${PHP_VER}" = "7.0" ]; then
+            echo "deb http://packages.dotdeb.org ${debian_codename} all" >> /etc/apt/sources.list
+            wget -O /tmp/dotdeb.gpg https://www.dotdeb.org/dotdeb.gpg
+            apt-key add /tmp/dotdeb.gpg
+            apt-get update
+            rm /tmp/dotdeb.gpg
+        fi
+        # installing PHP and it's modules
+        do_install php${PHP_VER}-common
+        do_install php${PHP_VER}-cli
+        do_install php${PHP_VER}-cgi
+        do_install php${PHP_VER}-mysql
+        do_install php${PHP_VER}-curl
+        do_install php${PHP_VER}-gd
+        do_install php${PHP_VER}-mcrypt
+        do_install php${PHP_VER}-intl
+        do_install php${PHP_VER}-json
+        do_install php${PHP_VER}-bcmath
+        do_install php${PHP_VER}-imap
+        if [ "${PHP_VER}" = "7.0" ]; then
+            do_install php${PHP_VER}-mbstring
+            do_install php${PHP_VER}-xml
+            do_install php${PHP_VER}-opcache
+        fi
+        cat > /etc/init.d/php${PHP_VER}-cgi <<END
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          php${PHP_VER}-cgi
@@ -360,28 +373,30 @@ esac
 exit \$RETVAL
 END
 
-chmod +x /etc/init.d/php${PHP_VER}-cgi
-update-rc.d php${PHP_VER}-cgi defaults
-
-if [ ! -d "/etc/nginx/sites-enabled" ]; then
-    mkdir "/etc/nginx/sites-enabled"
-fi
-if [ ! -d "/etc/nginx/sites-available" ]; then
-    mkdir "/etc/nginx/sites-available"
-fi
-if [ ! -d "/etc/nginx/snippets" ]; then
-    mkdir "/etc/nginx/snippets"
-fi
-if [ -e "/etc/nginx/sites-enabled/default" ]; then
-    rm "/etc/nginx/sites-enabled/default"
-fi
-if [ -e "/etc/nginx/conf.d/default.conf" ]; then
-    rm "/etc/nginx/conf.d/default.conf"
-fi
+        chmod +x /etc/init.d/php${PHP_VER}-cgi
+        update-rc.d php${PHP_VER}-cgi defaults
+    fi
 
 CPU_CORES_CNT=`nproc --all`
 ULIMIT=`ulimit -n`
-cat > /etc/nginx/nginx.conf << EOF
+if [ ! "$PORT_HTTP" = "0" ]; then
+    if [ ! -d "/etc/nginx/sites-enabled" ]; then
+        mkdir "/etc/nginx/sites-enabled"
+    fi
+    if [ ! -d "/etc/nginx/sites-available" ]; then
+        mkdir "/etc/nginx/sites-available"
+    fi
+    if [ ! -d "/etc/nginx/snippets" ]; then
+        mkdir "/etc/nginx/snippets"
+    fi
+    if [ -e "/etc/nginx/sites-enabled/default" ]; then
+        rm "/etc/nginx/sites-enabled/default"
+    fi
+    if [ -e "/etc/nginx/conf.d/default.conf" ]; then
+        rm "/etc/nginx/conf.d/default.conf"
+    fi
+
+    cat > /etc/nginx/nginx.conf << EOF
 user www-data;
 worker_processes ${CPU_CORES_CNT};
 pid /var/run/nginx.pid;
@@ -421,8 +436,8 @@ http {
 }
 EOF
 
-if [ ! -e "/etc/nginx/snippets/fastcgi-php.conf" ]; then
-    cat > /etc/nginx/snippets/fastcgi-php.conf << EOF
+    if [ ! -e "/etc/nginx/snippets/fastcgi-php.conf" ]; then
+        cat > /etc/nginx/snippets/fastcgi-php.conf << EOF
 # regex to split \$uri to \$fastcgi_script_name and \$fastcgi_path
 fastcgi_split_path_info ^(.+\.php)(/.+)\$;
 
@@ -437,9 +452,9 @@ fastcgi_param PATH_INFO \$path_info;
 fastcgi_index index.php;
 include fastcgi_params;
 EOF
-fi
+    fi
 
-cat > /etc/nginx/snippets/common.conf << EOF
+    cat > /etc/nginx/snippets/common.conf << EOF
 index  index.php index.html index.htm;
 location ~ \.php {
     include snippets/fastcgi-php.conf;
@@ -466,11 +481,14 @@ location ~* \.(ini)$ {
     return 404;
 }
 EOF
+service nginx start
+fi
 
-invoke-rc.d nginx start
-invoke-rc.d php${PHP_VER}-cgi start
-curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
-php "$WWW_ROOT/composer.phar"
+if [ ! "${PHP_VER}" = "0" ]; then
+    invoke-rc.d php${PHP_VER}-cgi start
+    curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
+    php "$WWW_ROOT/composer.phar"
+fi
 
 if [ ! "$PORT_MYSQL" = "0" ]; then
     #sed -i 's/#skip-innodb/skip-innodb/g' /etc/mysql/my.cnf
@@ -483,7 +501,8 @@ if [ ! "$PORT_MYSQL" = "0" ]; then
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_REMO_USER}'@'%' WITH GRANT OPTION;"
 fi
 
-cat > ${HOSTMANAGER_PATH} << GAHEOF
+if [ ! "$PORT_HTTP" = "0" ]; then
+    cat > ${HOSTMANAGER_PATH} << GAHEOF
 #!/bin/sh
 
 ### Checking for user
@@ -540,12 +559,16 @@ nginx_vhost_conf_name() {
 create_nginx_host() {
     # \$1=hostname; \$2=aliases; \$3=public_dir; \$4=config_dir; \$5=certbot_path_opt
     conf_file_name=\`nginx_vhost_conf_name \${1}\`
-    cat > "\${sites_available}/\${conf_file_name}" << EOF
+    if [ ! -z "${2}" ]; then
+    cat >> "\${sites_available}/\${conf_file_name}" << EOF
     server {
         listen 80;
         server_name \$2;
         return 301 http://\$1\\\$request_uri;
     }
+EOF
+    fi
+    cat >> "\${sites_available}/\${conf_file_name}" << EOF
     server {
         listen 80;
         server_name \$1;
@@ -946,6 +969,7 @@ esac
 GAHEOF
 chmod +x ${HOSTMANAGER_PATH}
 echo "alias spanel='sh ${HOSTMANAGER_PATH}'" >> /etc/bash.bashrc
+fi
 
 if [ ! "$PORT_FTP" = "0" ]; then
     sed -i "s/\t21\/tcp/\t$PORT_FTP\/tcp/g" /etc/services
