@@ -125,11 +125,16 @@ install() {
         nhostname="${hostname_old}"
     fi
 
-    read -p "Disable root login? You'll need to have your SSH key ready at the end of this setup and add it to the server so that it lets you in next time you connect. You won't be able to use the root account and password to log in anymore. Choosing 'n' will keep the root access [Y/n]: " noroot_Yn
-    if [ "${noroot_Yn}" = "" ]; then
-        noroot_Yn="Y"
+    read -p "Use your public SSH key instead of password-based authentication? You'll need to paste your SSH key at the end of this setup so that the server lets you in next time you connect. [Y/n]: " nopass_Yn
+    if [ "${nopass_Yn}" = "" ] || [ "${nopass_Yn}" = "Y" ]; then
+        nopass_Yn="y"
     fi
-    if [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "y" ]; then
+
+    read -p "Disable root login? You won't be able to use the root account and password to log in anymore. Choosing 'n' will keep the root access [Y/n]: " noroot_Yn
+    if  [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "" ]; then
+        noroot_Yn="y"
+    fi
+    if [ "${noroot_Yn}" = "y" ]; then
         read -p "SSH non-root user [${SSH_USER_DEFAULT}]: " SSH_USER
         if [ "$SSH_USER" = "" ]; then
             SSH_USER=$SSH_USER_DEFAULT
@@ -1038,10 +1043,21 @@ echo "Updating SSH configuration"
 # Update the SSH port
 sed -i "s/#Port/Port/g" /etc/ssh/sshd_config
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
-if [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "y" ]; then
+if [ "${noroot_Yn}" = "y" ]; then
+    DIR_HOME="/home/${SSH_USER}"
     # Disable root login
     sed -i "s/#PermitRootLogin/PermitRootLogin/g" /etc/ssh/sshd_config
     sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" /etc/ssh/sshd_config
+    # Whitelist the non-SSH user
+    echo "AllowUsers ${SSH_USER}" >> /etc/ssh/sshd_config
+    useradd -md "${DIR_HOME}" -g sudo $SSH_USER
+    if [ -d "${WWW_ROOT}" ]; then
+        chown -R ${SSH_USER}:www-data "${WWW_ROOT}"
+    fi
+else
+    DIR_HOME="/root"
+fi
+if [ "${nopass_Yn}" = "y" ]; then
     # Disable password authentication
     sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" /etc/ssh/sshd_config
     sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config
@@ -1051,13 +1067,9 @@ if [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "y" ]; then
     # Disable empty passwords
     sed -i "s/#PermitEmptyPasswords/PermitEmptyPasswords/g" /etc/ssh/sshd_config
     sed -i "s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g" /etc/ssh/sshd_config
-    # Whitelist the non-SSH user
-    echo "AllowUsers ${SSH_USER}" >> /etc/ssh/sshd_config
-    useradd -md "/home/${SSH_USER}" -g sudo $SSH_USER
-    mkdir -p "/home/${SSH_USER}/.ssh"
+    mkdir -p "${DIR_HOME}/.ssh"
     read -p "Please paste your public key here: " SSH_USER_PUBKEY
-    echo ${SSH_USER_PUBKEY} > /home/${SSH_USER}/.ssh/authorized_keys
-    chown -R ${SSH_USER}:www-data $WWW_ROOT
+    echo ${SSH_USER_PUBKEY} > "${DIR_HOME}"/.ssh/authorized_keys
 fi
 # https://www.veeam.com/kb2061
 echo "" >> /etc/ssh/sshd_config
