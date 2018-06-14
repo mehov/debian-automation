@@ -229,6 +229,7 @@ install() {
     if [ ! "$PORT_HTTP" = "0" ]; then
         echo "deb http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
         echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
+        wget https://nginx.org/keys/nginx_signing.key -O - | apt-key add -
     fi
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
