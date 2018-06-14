@@ -611,6 +611,9 @@ EOF
         }
         location /.well-known/acme-challenge/ {}
     }
+EOF
+if [ ! -z "\${2}" ]; then
+    cat >> "\${sites_available}/\${conf_file_name}" << EOF
     server {
         listen 443 ssl;
         server_name \$2;
@@ -628,6 +631,9 @@ EOF
         add_header Strict-Transport-Security max-age=15768000;
         return 301 https://\$1\\\$request_uri;
     }
+EOF
+fi
+cat >> "\${sites_available}/\${conf_file_name}" << EOF
     server {
         listen 443 ssl;
         server_name \$1;
