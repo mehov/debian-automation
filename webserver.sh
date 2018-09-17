@@ -477,10 +477,7 @@ location = /robots.txt {
     log_not_found off;
     access_log off;
 }
-location ~ /\.ht {
-    return 404;
-}
-location ~ /\.ng {
+location ~ /\.(?!well-known\/) {
     return 404;
 }
 location ~* \.(ini)$ {
