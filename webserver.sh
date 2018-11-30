@@ -477,11 +477,14 @@ location = /robots.txt {
     log_not_found off;
     access_log off;
 }
-location ~ /\.(?!well-known\/) {
-    return 404;
-}
 location ~* \.(ini)$ {
     return 404;
+}
+location ~ /\.well-known { 
+    allow all;
+}
+location ~ /\. {
+    deny all;
 }
 EOF
 service nginx start
