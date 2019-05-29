@@ -66,4 +66,4 @@ sed -i "s|#lockfile\t|lockfile	|g" /etc/rsnapshot.conf
 sed -i "s|lockfile\t\(.*\)|lockfile	${VAR_LOCKFILE}|g" /etc/rsnapshot.conf
 # set up the backup rules
 sed -i "s|backup\t|#backup	|g" /etc/rsnapshot.conf
-echo "backup	${VAR_REMOTE_USERNAME}@${VAR_REMOTE_SERVER}:/var/www	www/">>/etc/rsnapshot.conf
+echo "backup	${VAR_REMOTE_USERNAME}@${VAR_REMOTE_SERVER}:/var/www	${VAR_REMOTE_SERVER}/">>/etc/rsnapshot.conf
