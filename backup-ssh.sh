@@ -36,7 +36,11 @@ ssh-copy-id -i ${VAR_KEY_PATH} ${VAR_REMOTE_USERNAME}@${VAR_REMOTE_SERVER}
 
 # install the software
 apt-get update
-apt-get install -y --no-install-recommends rsnapshot
+apt-get install -y --no-install-recommends sudo rsnapshot
+
+# fix the "host authenticity can't be established" error
+cp /root/.ssh/known_hosts "${VAR_LOCATION}/.ssh"
+chown "${VAR_USERNAME}":"${VAR_USERNAME}" "${VAR_LOCATION}"
 
 # configure the software
 
