@@ -44,6 +44,8 @@ chown "${VAR_USERNAME}":"${VAR_USERNAME}" "${VAR_LOCATION}"
 
 # configure the software
 
+# set cron to run backups as the non-root user
+sed -i "s|root|${VAR_USERNAME}|g" /etc/cron.d/rsnapshot
 # uncomment and enable cmd_ssh
 sed -i "s|#@CMD_SSH@\t|@CMD_SSH@	|g" /etc/rsnapshot.conf
 sed -i "s|#cmd_ssh\t|cmd_ssh	|g" /etc/rsnapshot.conf
