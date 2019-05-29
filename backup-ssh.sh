@@ -25,11 +25,14 @@ fi
 groupadd "${VAR_USERNAME}"
 useradd -g "${VAR_USERNAME}" -md "${VAR_LOCATION}" -s /bin/false ${VAR_USERNAME}
 mkdir "${VAR_LOCATION}/.ssh"
+VAR_CONFIG_PATH="${VAR_LOCATION}/.ssh/config"
+echo "Host ${VAR_REMOTE_SERVER}" >> "${VAR_CONFIG_PATH}"
+echo "Port ${VAR_REMOTE_PORT}" >> "${VAR_CONFIG_PATH}"
+VAR_KEY_PATH="${VAR_LOCATION}/.ssh/id_rsa"
+ssh-keygen -q -t rsa -b 4096 -C "${VAR_USERNAME}" -N "" -f "${VAR_KEY_PATH}"
 chmod 700 "${VAR_LOCATION}/.ssh"
 chown -R "${VAR_USERNAME}":"${VAR_USERNAME}" "${VAR_LOCATION}"
-VAR_KEY_PATH="${VAR_LOCATION}/.ssh/id_rsa"
-ssh-keygen -q -t rsa -b 4096 -N "" -f "${VAR_KEY_PATH}"
-ssh-copy-id -i ${VAR_KEY_PATH} -p ${VAR_REMOTE_PORT} ${VAR_REMOTE_USERNAME}@${VAR_REMOTE_SERVER}
+ssh-copy-id -i ${VAR_KEY_PATH} ${VAR_REMOTE_USERNAME}@${VAR_REMOTE_SERVER}
 
 # install the software
 apt-get update
