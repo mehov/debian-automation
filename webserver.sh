@@ -1050,6 +1050,8 @@ echo "Updating SSH configuration"
 # Update the SSH port
 sed -i "s/#Port/Port/g" /etc/ssh/sshd_config
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
+# Log More Information - help.ubuntu.com/community/SSH/OpenSSH/Configuring
+sed -i "s/LogLevel INFO/LogLevel VERBOSE/g" /etc/ssh/sshd_config
 if [ "${noroot_Yn}" = "y" ]; then
     DIR_HOME="/home/${SSH_USER}"
     # Disable root login
