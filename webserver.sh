@@ -88,16 +88,7 @@ install() {
     fi
     read -p "Install PHP? [Y/n]: " PHP_Yn
     if [ "${PHP_Yn}" = "" ] ||  [ "${PHP_Yn}" = "Y" ] || [ "${PHP_Yn}" = "y" ]; then
-        read -p "Install php7.0? Choosing (n) will install php5 [Y/n]: " PHP7_Yn
-        if [ "${PHP7_Yn}" = "" ] ||  [ "${PHP7_Yn}" = "Y" ] || [ "${PHP7_Yn}" = "y" ]; then
-            PHP_VER="7.0"
-            # symlink to match the old naming format (see the issue #1)
-            if [ ! -L /usr/bin/php7.0-cgi ]; then
-                ln -s /usr/bin/php-cgi7.0 /usr/bin/php7.0-cgi
-            fi
-        else 
-            PHP_VER="5"
-        fi
+        PHP_VER="7"
     else 
         PHP_VER="0"
     fi
@@ -286,101 +277,21 @@ EOF
     fi
 
     if [ ! "${PHP_VER}" = "0" ]; then
-        if [ "${PHP_VER}" = "7.0" ]; then
-            echo "deb http://packages.dotdeb.org ${debian_codename} all" >> /etc/apt/sources.list
-            wget -O /tmp/dotdeb.gpg https://www.dotdeb.org/dotdeb.gpg
-            apt-key add /tmp/dotdeb.gpg
-            apt-get update
-            rm /tmp/dotdeb.gpg
-        fi
         # installing PHP and it's modules
-        do_install php${PHP_VER}-common
-        do_install php${PHP_VER}-cli
-        do_install php${PHP_VER}-cgi
-        do_install php${PHP_VER}-mysql
-        do_install php${PHP_VER}-curl
-        do_install php${PHP_VER}-gd
-        do_install php${PHP_VER}-mcrypt
-        do_install php${PHP_VER}-intl
-        do_install php${PHP_VER}-json
-        do_install php${PHP_VER}-bcmath
-        do_install php${PHP_VER}-imap
-        if [ "${PHP_VER}" = "7.0" ]; then
-            do_install php${PHP_VER}-mbstring
-            do_install php${PHP_VER}-xml
-            do_install php${PHP_VER}-opcache
-        fi
-        cat > /etc/init.d/php${PHP_VER}-cgi <<END
-#!/bin/sh
-### BEGIN INIT INFO
-# Provides:          php${PHP_VER}-cgi
-# Required-Start:    \$local_fs \$remote_fs \$network
-# Required-Stop:     \$local_fs \$remote_fs \$network
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: controls php${PHP_VER}-cgi
-# Description:       controls php${PHP_VER}-cgi using start-stop-daemon
-### END INIT INFO
-
-PHP_CGI="\$(which php${PHP_VER}-cgi)"
-PHP_CGI_NAME=\`basename \$PHP_CGI\`
-
-BIND="/var/run/\${PHP_CGI_NAME}/\${PHP_CGI_NAME}.sock"
-PIDFILE="/var/run/\${PHP_CGI_NAME}.pid"
-USER=www-data
-
-PHP_FCGI_CHILDREN=16
-PHP_FCGI_MAX_REQUESTS=4096
-
-PHP_CGI_ARGS="- USER=\$USER PATH=/usr/bin PHP_FCGI_CHILDREN=\$PHP_FCGI_CHILDREN PHP_FCGI_MAX_REQUESTS=\$PHP_FCGI_MAX_REQUESTS \$PHP_CGI -b \$BIND"
-RETVAL=0
-
-start() {
-    if ! [ -d /var/run/\${PHP_CGI_NAME} ]; then
-        mkdir /var/run/\${PHP_CGI_NAME}
-    fi
-    chown www-data:www-data /var/run/\${PHP_CGI_NAME}
-    chmod 0777 /var/run/\${PHP_CGI_NAME}
-    echo -n "Starting PHP FastCGI: "
-    start-stop-daemon --quiet --start --pidfile \${PIDFILE} --background --chuid "\$USER" --exec /usr/bin/env -- \$PHP_CGI_ARGS
-    RETVAL=\$?
-    echo "\$PHP_CGI_NAME."
-}
-stop() {
-    echo -n "Stopping PHP FastCGI: "
-    #pkill \$PHP_CGI_NAME
-    #RETVAL=\$?
-    start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile \${PIDFILE} > /dev/null
-    RETVAL="\$?"
-    [ "\$RETVAL" = 2 ] && return 2
-    start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec /usr/bin/env
-    [ "\$?" = 2 ] && return 2
-    rm -f \$PIDFILE
-    echo "\$PHP_CGI_NAME."
-    return "\$RETVAL"
-}
-
-case "\$1" in
-    start)
-        start
-        ;;
-    stop)
-        stop
-        ;;
-    restart)
-        stop
-        start
-        ;;
-    *)
-        echo "Usage: php-fastcgi {start|stop|restart}"
-        exit 1
-        ;;
-esac
-exit \$RETVAL
-END
-
-        chmod +x /etc/init.d/php${PHP_VER}-cgi
-        update-rc.d php${PHP_VER}-cgi defaults
+        do_install php${PHP_VER}*-common
+        do_install php${PHP_VER}*-cli
+        do_install php${PHP_VER}*-fpm
+        do_install php${PHP_VER}*-mysql
+        do_install php${PHP_VER}*-curl
+        do_install php${PHP_VER}*-gd
+        do_install php${PHP_VER}*-mcrypt
+        do_install php${PHP_VER}*-intl
+        do_install php${PHP_VER}*-json
+        do_install php${PHP_VER}*-bcmath
+        do_install php${PHP_VER}*-imap
+        do_install php${PHP_VER}*-mbstring
+        do_install php${PHP_VER}*-xml
+        do_install php${PHP_VER}*-opcache
     fi
 
 CPU_CORES_CNT=`nproc --all`
@@ -460,13 +371,14 @@ include fastcgi_params;
 EOF
     fi
 
+    PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
     cat > /etc/nginx/snippets/common.conf << EOF
 index  index.php index.html index.htm;
 location ~ \.php {
     include snippets/fastcgi-php.conf;
     keepalive_timeout 0;
     fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-    fastcgi_pass unix:/var/run/php${PHP_VER}-cgi/php${PHP_VER}-cgi.sock;
+    fastcgi_pass unix:${PHP_SOCK_PATH};
 }
 location = /favicon.ico {
     log_not_found off;
@@ -491,7 +403,6 @@ service nginx start
 fi
 
 if [ ! "${PHP_VER}" = "0" ]; then
-    service php${PHP_VER}-cgi start
     curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
 fi
