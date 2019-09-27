@@ -130,7 +130,7 @@ install() {
         nopass_Yn="y"
     fi
 
-    read -p "Disable root login? You won't be able to use the root account and password to log in anymore. Choosing 'n' will keep the root access [Y/n]: " noroot_Yn
+    read -p "Disable direct root login? Using a non-root account and switching to root only when needed is more secure. Choosing 'n' will keep the direct root login [Y/n]: " noroot_Yn
     if  [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "" ]; then
         noroot_Yn="y"
     fi
