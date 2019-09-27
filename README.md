@@ -2,4 +2,4 @@ This is a collection of shell scripts I'm using to automate setting up various s
 
 Usage:
 
-    apt-get update && apt-get install ca-certificates && wget -O webserver.sh https://raw.githubusercontent.com/mehov/debian-automation/master/webserver.sh && sh ./webserver.sh
+    apt-get update && apt-get install wget ca-certificates && wget -O webserver.sh https://raw.githubusercontent.com/mehov/debian-automation/master/webserver.sh && sh ./webserver.sh
