@@ -64,7 +64,7 @@ do_uninstall() {
     is_installed $1
     RES=$?
     if [ "1" = $RES ]; then
-        invoke-rc.d $1 stop
+        service $1 stop
         apt-get purge -s -y $DEL
     fi
 }
@@ -282,7 +282,7 @@ EOF
     fi
     if [ ! "$PORT_MYSQL" = "0" ]; then
         do_install mysql-server
-        invoke-rc.d mysql stop
+        service mysql stop
     fi
 
     if [ ! "${PHP_VER}" = "0" ]; then
@@ -491,7 +491,7 @@ service nginx start
 fi
 
 if [ ! "${PHP_VER}" = "0" ]; then
-    invoke-rc.d php${PHP_VER}-cgi start
+    service php${PHP_VER}-cgi start
     curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
 fi
@@ -501,7 +501,7 @@ if [ ! "$PORT_MYSQL" = "0" ]; then
     echo "skip-innodb" >> /etc/mysql/my.cnf
     sed -i "s/\t= 3306/\t= ${PORT_MYSQL}/g" /etc/mysql/my.cnf
     sed -i "s/\t= 127.0.0.1/\t= $(hostname -i)/g" /etc/mysql/my.cnf
-    invoke-rc.d mysql start
+    service mysql start
     mysqladmin -u root password "${MYSQL_ROOT_PASS}"
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "CREATE USER '${MYSQL_REMO_USER}'@'%' IDENTIFIED BY '${MYSQL_REMO_PASS}';"
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_REMO_USER}'@'%' WITH GRANT OPTION;"
@@ -548,7 +548,7 @@ restart_nginx() {
         else
             command='start'
         fi
-    invoke-rc.d nginx \$command
+    service nginx \$command
 }
 add_alias() {
     aliases=\$aliases" "\$1
@@ -1033,7 +1033,7 @@ esac
 exit \$RETVAL
 EOF
 chmod +x /etc/init.d/inetutils-ftpd
-invoke-rc.d inetutils-ftpd start
+service inetutils-ftpd start
 update-rc.d inetutils-ftpd defaults
 fi
 
