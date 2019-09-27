@@ -373,7 +373,7 @@ EOF
 
     PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
     cat > /etc/nginx/snippets/common.conf << EOF
-index  index.php index.html index.htm;
+index index.php index.html index.htm;
 location ~ \.php {
     include snippets/fastcgi-php.conf;
     keepalive_timeout 0;
