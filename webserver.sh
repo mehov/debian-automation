@@ -1081,10 +1081,18 @@ if [ "${nopass_Yn}" = "y" ]; then
     read -p "Please paste your public key here: " SSH_USER_PUBKEY
     echo ${SSH_USER_PUBKEY} > "${DIR_HOME}"/.ssh/authorized_keys
 fi
-# https://www.veeam.com/kb2061
+# https://infosec-handbook.eu/blog/wss1-basic-hardening/#s3
 echo "" >> /etc/ssh/sshd_config
-echo "KexAlgorithms diffie-hellman-group1-sha1,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1" >> /etc/ssh/sshd_config
-echo "Ciphers 3des-cbc,blowfish-cbc,aes128-cbc,aes128-ctr,aes256-ctr" >> /etc/ssh/sshd_config
+sed -i '/^KexAlgorithms /d' /etc/ssh/sshd_config
+sed -i '/^Ciphers /d' /etc/ssh/sshd_config
+sed -i '/^MACs /d' /etc/ssh/sshd_config
+sed -i '/^HostKeyAlgorithms /d' /etc/ssh/sshd_config
+cat << EOF >> /etc/ssh/sshd_config
+KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ssh-rsa-cert-v01@openssh.com
+EOF
 ssh-keygen -A
 
 
