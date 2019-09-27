@@ -234,7 +234,7 @@ install() {
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
     cat >> /root/.bash_profile << EOF
-export GREP_OPTIONS='--color=always'
+alias grep="grep --color=auto"
 # http://superuser.com/a/664061/111289
 export HISTFILESIZE=
 export HISTSIZE=
