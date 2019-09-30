@@ -212,6 +212,9 @@ install() {
     do_uninstall dovecot
     do_uninstall mysql
 
+    do_install ca-certificates
+    do_install wget
+
     debian_version=`cat /etc/debian_version | sed -r 's/\..*//'`
     debian_codename=$(lsb_release -sc)
     cat /dev/null > /etc/apt/sources.list
@@ -253,9 +256,7 @@ EOF
     do_install cron
     do_install systemd
     do_install curl
-    do_install ca-certificates
     do_install easy-rsa
-    do_install wget
     do_install logrotate
     do_install ntp
     do_install tzdata
