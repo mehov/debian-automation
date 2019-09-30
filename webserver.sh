@@ -1009,9 +1009,6 @@ ssh-keygen -A
 
 #/usr/bin/ssh-keygen -A
 
-echo "**** All done."
-echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
-echo "**** The server will reboot."
 
 #iptables -A INPUT -s 8.8.1.1/16 -p tcp --dport ${PORT_SSH} -j ACCEPT
 #iptables -A OUTPUT -d 8.8.1.1/16 -p tcp --sport ${PORT_SSH} -j ACCEPT
@@ -1032,6 +1029,10 @@ chmod +x /etc/network/if-up.d/iptables
 
 apt-get -y autoremove
 rm $0
+
+echo "**** All done."
+echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
+echo "**** The server will reboot."
 
 reboot
 }
