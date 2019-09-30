@@ -14,6 +14,7 @@ FTP_USER="ftp-data"
 WWW_ROOT="/var/www"
 CERTBOT_PATH="/root/certbot-auto"
 HOSTMANAGER_PATH="/root/spanel.sh"
+SSH_CLIENT_IP=$(who -m --ips | awk '{print $5}')
 
 # reusable functions
 random_string() {
