@@ -117,6 +117,16 @@ install() {
         nhostname="${hostname_old}"
     fi
 
+    read -p "Secure non-public ports by whitelisting your IP addresses? [Y/n]: " WHTLST_Yn
+    if [ "${WHTLST_Yn}" = "" ] || [ "${WHTLST_Yn}" = "Y" ] || [ "${WHTLST_Yn}" = "y" ]; then
+        read -p "Whitelisted IP addresses, space-separated [${SSH_CLIENT_IP}]: " WHTLST_IPS
+        if [ -z "${WHTLST_IPS}" ]; then
+            WHTLST_IPS="${SSH_CLIENT_IP}"
+        fi
+    else
+        WHTLST_IPS=""
+    fi
+
     read -p "Use your public SSH key instead of password-based authentication? You'll need to paste your SSH key at the end of this setup so that the server lets you in next time you connect. [Y/n]: " nopass_Yn
     if [ "${nopass_Yn}" = "" ] || [ "${nopass_Yn}" = "Y" ]; then
         nopass_Yn="y"
@@ -1011,14 +1021,21 @@ ssh-keygen -A
 #/usr/bin/ssh-keygen -A
 
 
-#iptables -A INPUT -s 8.8.1.1/16 -p tcp --dport ${PORT_SSH} -j ACCEPT
-#iptables -A OUTPUT -d 8.8.1.1/16 -p tcp --sport ${PORT_SSH} -j ACCEPT
-#iptables -A INPUT -p tcp --dport ${PORT_SSH} -j DROP
-#iptables -A OUTPUT -p tcp --sport ${PORT_SSH} -j DROP
 if [ ! "${PORT_SSH}" = "22" ]; then
-    iptables -A INPUT -p tcp --dport 22 -j DROP
-    iptables -A OUTPUT -p tcp --sport 22 -j DROP
+    echo "iptables -A INPUT -p tcp --dport 22 -j DROP"
+    echo "iptables -A OUTPUT -p tcp --sport 22 -j DROP"
 fi;
+if [ -n "${WHTLST_IPS}" ]; then
+    WHTLST_PORTS="${PORT_SSH} ${PORT_FTP} ${PORT_MYSQL}"
+    for WL_PORT in ${WHTLST_PORTS}; do
+        for WL_IP in ${WHTLST_IPS}; do
+            echo "iptables -A INPUT -p tcp --dport ${WL_PORT} -s ${WL_IP} -j ACCEPT"
+            echo "iptables -A OUTPUT -p tcp --sport ${WL_PORT} -d ${WL_IP} -j ACCEPT"
+        done
+        echo "iptables -A INPUT -p tcp --dport ${WL_PORT} -j DROP"
+        echo "iptables -A OUTPUT -p tcp --sport ${WL_PORT} -j DROP"
+    done
+fi
 iptables-save > /etc/iptables.conf
 cat > /etc/network/if-up.d/iptables << EOF
 #!/bin/sh
