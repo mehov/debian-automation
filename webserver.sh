@@ -1048,6 +1048,7 @@ rm $0
 
 echo "**** All done."
 echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
+echo "     (make sure to allow it with your AWS/GCP/etc. firewall)"
 echo "**** The server will reboot."
 
 reboot
