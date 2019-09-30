@@ -408,8 +408,6 @@ if [ ! "${PHP_VER}" = "0" ]; then
 fi
 
 if [ ! "$PORT_MYSQL" = "0" ]; then
-    #sed -i 's/#skip-innodb/skip-innodb/g' /etc/mysql/my.cnf
-    echo "skip-innodb" >> /etc/mysql/my.cnf
     sed -i "s/\t= 3306/\t= ${PORT_MYSQL}/g" /etc/mysql/my.cnf
     sed -i "s/\t= 127.0.0.1/\t= $(hostname -i)/g" /etc/mysql/my.cnf
     service mysql start
