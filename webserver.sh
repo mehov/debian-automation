@@ -272,7 +272,8 @@ EOF
         do_install inetutils-ftpd
     fi
     if [ ! "$PORT_MYSQL" = "0" ]; then
-        do_install mysql-server
+        do_install mariadb-server
+        systemctl enable mariadb
         service mysql stop
     fi
 
@@ -408,8 +409,9 @@ if [ ! "${PHP_VER}" = "0" ]; then
 fi
 
 if [ ! "$PORT_MYSQL" = "0" ]; then
-    sed -i "s/\t= 3306/\t= ${PORT_MYSQL}/g" /etc/mysql/my.cnf
-    sed -i "s/\t= 127.0.0.1/\t= $(hostname -i)/g" /etc/mysql/my.cnf
+    sed -i "s/^#port/port/g" /etc/mysql/mariadb.conf.d/50-server.cnf
+    sed -i "s/= 3306/= ${PORT_MYSQL}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
+    sed -i "s/= 127.0.0.1/= $(hostname -i)/g" /etc/mysql/mariadb.conf.d/50-server.cnf
     service mysql start
     mysqladmin -u root password "${MYSQL_ROOT_PASS}"
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "CREATE USER '${MYSQL_REMO_USER}'@'%' IDENTIFIED BY '${MYSQL_REMO_PASS}';"
