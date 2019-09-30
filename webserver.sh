@@ -47,7 +47,7 @@ do_install() {
     is_installed $1
     RES=$?
     if [ "0" = $RES ]; then
-        apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" $1
+        DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" $1
     fi
 }
 
@@ -235,7 +235,6 @@ export HISTFILE=~/.bash_eternal_history
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 EOF
 
-    export DEBIAN_FRONTEND=noninteractive
     apt-get update # has to be here, even if it fails
     apt-get install -y debian-keyring 
     apt-get install -y debian-archive-keyring
