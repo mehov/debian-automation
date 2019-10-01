@@ -272,6 +272,8 @@ EOF
     do_install tzdata
     echo "UTC" > /etc/timezone
     dpkg-reconfigure -f noninteractive tzdata
+    do_install unattended-upgrades
+    dpkg-reconfigure -f noninteractive unattended-upgrades
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
