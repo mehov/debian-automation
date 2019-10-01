@@ -977,6 +977,9 @@ sed -i "s/LogLevel INFO/LogLevel VERBOSE/g" /etc/ssh/sshd_config
 # Disable empty passwords
 sed -i "s/#PermitEmptyPasswords/PermitEmptyPasswords/g" /etc/ssh/sshd_config
 sed -i "s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g" /etc/ssh/sshd_config
+# Disable X11Forwarding
+sed -i "s/#X11Forwarding/X11Forwarding/g" /etc/ssh/sshd_config
+sed -i "s/X11Forwarding yes/X11Forwarding no/g" /etc/ssh/sshd_config
 if [ "${noroot_Yn}" = "y" ]; then
     DIR_HOME="/home/${SSH_USER}"
     # Disable root login
