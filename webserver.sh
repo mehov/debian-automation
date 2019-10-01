@@ -974,6 +974,9 @@ sed -i "s/#Port/Port/g" /etc/ssh/sshd_config
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
 # Log More Information - help.ubuntu.com/community/SSH/OpenSSH/Configuring
 sed -i "s/LogLevel INFO/LogLevel VERBOSE/g" /etc/ssh/sshd_config
+# Disable empty passwords
+sed -i "s/#PermitEmptyPasswords/PermitEmptyPasswords/g" /etc/ssh/sshd_config
+sed -i "s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g" /etc/ssh/sshd_config
 if [ "${noroot_Yn}" = "y" ]; then
     DIR_HOME="/home/${SSH_USER}"
     # Disable root login
@@ -996,9 +999,6 @@ if [ "${nopass_Yn}" = "y" ]; then
     # Enable key-based authentication
     sed -i "s/#PubkeyAuthentication/PubkeyAuthentication/g" /etc/ssh/sshd_config
     sed -i "s/PubkeyAuthentication no/PubkeyAuthentication yes/g" /etc/ssh/sshd_config
-    # Disable empty passwords
-    sed -i "s/#PermitEmptyPasswords/PermitEmptyPasswords/g" /etc/ssh/sshd_config
-    sed -i "s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g" /etc/ssh/sshd_config
     mkdir -p "${DIR_HOME}/.ssh"
     read -p "Please paste your public key here: " SSH_USER_PUBKEY
     echo ${SSH_USER_PUBKEY} > "${DIR_HOME}"/.ssh/authorized_keys
