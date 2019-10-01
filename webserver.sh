@@ -980,6 +980,8 @@ sed -i "s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g" /etc/ssh/sshd_conf
 # Disable X11Forwarding
 sed -i "s/#X11Forwarding/X11Forwarding/g" /etc/ssh/sshd_config
 sed -i "s/X11Forwarding yes/X11Forwarding no/g" /etc/ssh/sshd_config
+# Set MaxAuthTries to 4 (https://superuser.com/a/1180018)
+sed -i 's/^ *# *MaxAuthTries *[^ ]*/MaxAuthTries 4/' /etc/ssh/sshd_config
 if [ "${noroot_Yn}" = "y" ]; then
     DIR_HOME="/home/${SSH_USER}"
     # Disable root login
