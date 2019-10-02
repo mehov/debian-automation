@@ -117,15 +117,15 @@ install() {
         nhostname="${hostname_old}"
     fi
 
-    echo -e "\n\n\n\n"
+    printf "\n\n\n\n"
     echo "Some commonly hacked ports (e.g. SSH, FTP) shouldn't be public."
     echo "You can whitelist your trusted IP addresses, and block everyone else."
     echo ""
     echo "!! If you lose access to the IPs you whitelisted, you will get locked out."
     echo ""
-    echo -e "So use multiple trusted IPs (e.g. a backup VPN), or buy a "
-    echo -e "static IP from your ISP, or make sure your VPS provider has "
-    echo "an emergency console or is able to step in; otherwise choose 'n' below."
+    printf "So use multiple trusted IPs (e.g. a backup VPN), or buy a "
+    printf "static IP from your ISP, or make sure your VPS provider has "
+    printf "an emergency console or is able to step in; otherwise choose 'n' below.\n"
     echo ""
     read -p "Secure commonly hacked ports by whitelisting your IP addresses? [Y/n]: " WHTLST_Yn
     if [ "${WHTLST_Yn}" = "" ] || [ "${WHTLST_Yn}" = "Y" ] || [ "${WHTLST_Yn}" = "y" ]; then
