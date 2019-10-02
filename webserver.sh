@@ -1100,7 +1100,7 @@ case "$1" in
         install
         ;;
     *)
-        read -p "Start the installation? [Y/n]: " inststart
+        read -p "Using this is your own risk and responsibility. [Y/n]: " inststart
         if [ "${inststart}" != "N" ] && [ "${inststart}" != "n" ]; then
             install
         else
