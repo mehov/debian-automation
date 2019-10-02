@@ -284,6 +284,7 @@ EOF
     dpkg-reconfigure -f noninteractive tzdata
     do_install unattended-upgrades
     dpkg-reconfigure -f noninteractive unattended-upgrades
+    do_install fail2ban
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
@@ -318,6 +319,16 @@ EOF
         do_install php${PHP_VER}*-opcache
     fi
 
+# initial fail2ban jail configuration
+cat > /etc/fail2ban/jail.local << EOF
+[DEFAULT]
+findtime = 1w
+bantime = 1w
+banaction = iptables-multiport
+banaction_allports = iptables-allports
+EOF
+
+# nginx configuration
 CPU_CORES_CNT=`nproc --all`
 ULIMIT=`ulimit -n`
 if [ ! "$PORT_HTTP" = "0" ]; then
@@ -1033,6 +1044,23 @@ MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@op
 HostKeyAlgorithms ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ssh-rsa-cert-v01@openssh.com
 EOF
 ssh-keygen -A
+
+# configure fail2ban for sshd
+SSH_MAXRETRY=4
+if [ "${nopass_Yn}" = "y" ]; then
+    # lower the tolerance for failed attempts if no password is used
+    SSH_MAXRETRY=2
+fi
+cat >> /etc/fail2ban/jail.local << EOF
+[sshd]
+enabled = true
+mode = aggressive
+port = ${PORT_SSH}
+filter = sshd
+maxretry = ${SSH_MAXRETRY}
+logpath = %(sshd_log)s
+backend = %(sshd_backend)s
+EOF
 
 if [ ! "${PORT_SSH}" = "22" ]; then
     echo "iptables -A INPUT -p tcp --dport 22 -j DROP"
