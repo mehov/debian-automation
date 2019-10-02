@@ -1034,10 +1034,6 @@ HostKeyAlgorithms ssh-ed25519,rsa-sha2-256,rsa-sha2-512,ssh-rsa-cert-v01@openssh
 EOF
 ssh-keygen -A
 
-
-#/usr/bin/ssh-keygen -A
-
-
 if [ ! "${PORT_SSH}" = "22" ]; then
     echo "iptables -A INPUT -p tcp --dport 22 -j DROP"
     echo "iptables -A OUTPUT -p tcp --sport 22 -j DROP"
