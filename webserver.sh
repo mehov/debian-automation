@@ -1063,18 +1063,18 @@ backend = %(sshd_backend)s
 EOF
 
 if [ ! "${PORT_SSH}" = "22" ]; then
-    echo "iptables -A INPUT -p tcp --dport 22 -j DROP"
-    echo "iptables -A OUTPUT -p tcp --sport 22 -j DROP"
+    iptables -A INPUT -p tcp --dport 22 -j DROP
+    iptables -A OUTPUT -p tcp --sport 22 -j DROP
 fi;
 if [ -n "${WHTLST_IPS}" ]; then
     WHTLST_PORTS="${PORT_SSH} ${PORT_FTP} ${PORT_MYSQL}"
     for WL_PORT in ${WHTLST_PORTS}; do
         for WL_IP in ${WHTLST_IPS}; do
-            echo "iptables -A INPUT -p tcp --dport ${WL_PORT} -s ${WL_IP} -j ACCEPT"
-            echo "iptables -A OUTPUT -p tcp --sport ${WL_PORT} -d ${WL_IP} -j ACCEPT"
+            iptables -A INPUT -p tcp --dport ${WL_PORT} -s ${WL_IP} -j ACCEPT
+            iptables -A OUTPUT -p tcp --sport ${WL_PORT} -d ${WL_IP} -j ACCEPT
         done
-        echo "iptables -A INPUT -p tcp --dport ${WL_PORT} -j DROP"
-        echo "iptables -A OUTPUT -p tcp --sport ${WL_PORT} -j DROP"
+        iptables -A INPUT -p tcp --dport ${WL_PORT} -j DROP
+        iptables -A OUTPUT -p tcp --sport ${WL_PORT} -j DROP
     done
 fi
 iptables-save > /etc/iptables.conf
