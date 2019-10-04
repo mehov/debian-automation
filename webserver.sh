@@ -359,6 +359,7 @@ events {
     multi_accept on;
 }
 http {
+    server_names_hash_bucket_size 64;
     client_max_body_size 32m;
     include mime.types;
     default_type application/octet-stream;
