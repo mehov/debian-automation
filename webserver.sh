@@ -326,6 +326,7 @@ findtime = 1w
 bantime = 1w
 banaction = iptables-multiport
 banaction_allports = iptables-allports
+ignoreip = ${WHTLST_IPS}
 EOF
 
 # nginx configuration
