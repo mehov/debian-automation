@@ -1063,10 +1063,35 @@ logpath = %(sshd_log)s
 backend = %(sshd_backend)s
 EOF
 
+iptables -F
+
+# if SSH uses port other than 22, add a honeypot
 if [ ! "${PORT_SSH}" = "22" ]; then
-    iptables -A INPUT -p tcp --dport 22 -j DROP
+    HP_PREF="ssh-honeypot"
+    iptables -A INPUT -p tcp  --dport 22 -j LOG --log-prefix="${HP_PREF} "
     iptables -A OUTPUT -p tcp --sport 22 -j DROP
+    cat > "/etc/rsyslog.d/00-${HP_PREF}.conf" << EOF
+:msg,contains,"${HP_PREF} " -/var/log/${HP_PREF}.log
+& ~
+EOF
+    cat > "/etc/fail2ban/filter.d/${HP_PREF}.conf" << EOF
+[Definition]
+
+failregex = ${HP_PREF} .* SRC=<HOST>
+
+ignoreregex =
+EOF
+    cat >> /etc/fail2ban/jail.local << EOF
+[${HP_PREF}]
+enabled = true
+filter = ${HP_PREF}
+maxretry = 1
+logpath = /var/log/${HP_PREF}.log
+EOF
+    service rsyslog restart
 fi;
+
+# configure iptables with whitelisted IP addresses, if any
 if [ -n "${WHTLST_IPS}" ]; then
     WHTLST_PORTS="${PORT_SSH} ${PORT_FTP} ${PORT_MYSQL}"
     for WL_PORT in ${WHTLST_PORTS}; do
