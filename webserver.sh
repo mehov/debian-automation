@@ -512,7 +512,7 @@ nginx_vhost_conf_name() {
 create_nginx_host() {
     # \$1=hostname; \$2=aliases; \$3=public_dir; \$4=config_dir; \$5=certbot_path_opt
     conf_file_name=\`nginx_vhost_conf_name \${1}\`
-    if [ ! -z "${2}" ]; then
+    if [ ! -z "\${2}" ]; then
     cat >> "\${sites_available}/\${conf_file_name}" << EOF
     server {
         listen 80;
