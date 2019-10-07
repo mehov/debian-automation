@@ -359,6 +359,7 @@ events {
     multi_accept on;
 }
 http {
+    limit_req_zone \$binary_remote_addr zone=byip:64m rate=4r/s;
     server_names_hash_bucket_size 64;
     client_max_body_size 32m;
     include mime.types;
@@ -412,6 +413,7 @@ EOF
     cat > /etc/nginx/snippets/common.conf << EOF
 index index.php index.html index.htm;
 location ~ \.php {
+    limit_req zone=byip burst=4;
     include snippets/fastcgi-php.conf;
     keepalive_timeout 0;
     fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
