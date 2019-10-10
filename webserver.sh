@@ -386,6 +386,7 @@ http {
     gzip_http_version 1.1;
     gzip_min_length 256;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/x-javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon application/x-font-opentype application/x-font-truetype font/eot font/otf image/vnd.microsoft.icon;
+    include snippets/suspicious.conf;
     include /etc/nginx/conf.d/*.conf;
     include /etc/nginx/sites-enabled/*;
 }
@@ -413,6 +414,10 @@ EOF
     cat > /etc/nginx/snippets/common.conf << EOF
 index index.php index.html index.htm;
 location ~ \.php {
+    if (\$suspicious = 1) {
+        access_log /var/log/nginx/suspicious.log suslog;
+        return 500;
+    }
     limit_req zone=byip burst=4;
     include snippets/fastcgi-php.conf;
     keepalive_timeout 0;
@@ -438,6 +443,33 @@ location ~ /\. {
     deny all;
 }
 EOF
+
+    cat > /etc/nginx/snippets/suspicious.conf << 'EOF'
+# poor man's WAF
+map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
+    default 0;
+    "~127\.0\.0\.1" 1;
+    "~(\.\./)+" 1;
+    "~*(<|%3c)\?" 1;
+    "~*\?(>|%3e)" 1;
+    "~_(SERVER|GET|POST|FILES|REQUEST|SESSION|ENV|COOKIE)\[" 1;
+    "~*(\\x|%)(3c|3e|5c|22|27)+" 1;
+    "~*(un)?hex\(" 1;
+    "~*base64_(en|de)code" 1;
+    "~*file_(put|get)_contents" 1;
+    "~*call_user_func_array" 1;
+    "~*(mb_)?ereg_replace" 1;
+    "~*char(.*)?(\(|%28)" 1;
+    "~*concat(.*)?(\(|%28)" 1;
+    "~*eval(.*)?(\(|%28)" 1;
+    "~*(union(.*))?select(.*)from" 1;
+    "~*union(.*)select((.*)from)?" 1;
+}
+log_format suslog '$remote_addr - $remote_user $host [$time_local] '
+    '"$request" $status $body_bytes_sent '
+    '"$http_referer" "$http_user_agent"';
+EOF
+
 service nginx start
 fi
 
