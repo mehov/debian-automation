@@ -1104,7 +1104,6 @@ iptables -F
 if [ ! "${PORT_SSH}" = "22" ]; then
     HP_PREF="ssh-honeypot"
     iptables -A INPUT -p tcp  --dport 22 -j LOG --log-prefix="${HP_PREF} "
-    iptables -A OUTPUT -p tcp --sport 22 -j DROP
     cat > "/etc/rsyslog.d/00-${HP_PREF}.conf" << EOF
 :msg,contains,"${HP_PREF} " -/var/log/${HP_PREF}.log
 & ~
