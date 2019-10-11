@@ -360,7 +360,7 @@ events {
 }
 http {
     limit_req_zone \$binary_remote_addr zone=byip:64m rate=4r/s;
-    server_names_hash_bucket_size 64;
+    server_names_hash_bucket_size 128;
     client_max_body_size 32m;
     include mime.types;
     default_type application/octet-stream;
