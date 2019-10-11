@@ -1102,7 +1102,7 @@ iptables -F
 
 # if SSH uses port other than 22, add a honeypot
 if [ ! "${PORT_SSH}" = "22" ]; then
-    HP_PREF="ssh-honeypot"
+    HP_PREF="sshd-honeypot"
     iptables -A INPUT -p tcp  --dport 22 -j LOG --log-prefix="${HP_PREF} "
     cat > "/etc/rsyslog.d/00-${HP_PREF}.conf" << EOF
 :msg,contains,"${HP_PREF} " -/var/log/${HP_PREF}.log
