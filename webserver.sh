@@ -470,6 +470,33 @@ log_format suslog '$remote_addr - $remote_user $host [$time_local] '
     '"$http_referer" "$http_user_agent"';
 EOF
 
+    # configure fail2ban for poor man's nginx waf
+    NW_PREF="nginx-custom-waf"
+    cat > "/etc/fail2ban/filter.d/${NW_PREF}.conf" << 'EOF'
+[Definition]
+
+failregex = ^<HOST> (.*)?$
+
+ignoreregex =
+EOF
+    cat > "/etc/fail2ban/action.d/${NW_PREF}-log.conf" << 'EOF'
+[Definition]
+
+actionban = grep -iR "<ip>" /var/log/nginx > "/var/log/nginx-attacks/<ip>.log"
+
+ignoreregex =
+EOF
+    cat >> /etc/fail2ban/jail.local << EOF
+[${NW_PREF}]
+enabled = true
+filter = ${NW_PREF}
+action = iptables-allports
+         ${NW_PREF}-log
+maxretry = 4
+logpath = /var/log/nginx/suspicious.log
+EOF
+    mkdir /var/log/nginx-attacks
+
 service nginx start
 fi
 
