@@ -919,7 +919,7 @@ remove() {
 }
 
 certbot_update_all() {
-    ${CERTBOT_PATH} renew --post-hook "service nginx reload"
+    ${CERTBOT_PATH} renew --webroot -w "${LETSENCRYPT_ROOT}" --post-hook "service nginx reload"
 }
 
 if [ -z \$# ] && [ \$# -gt 0 ]; then
