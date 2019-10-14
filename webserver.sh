@@ -919,8 +919,7 @@ remove() {
 }
 
 certbot_update_all() {
-    ${CERTBOT_PATH} renew
-    (sleep 3600 && service nginx restart)&
+    ${CERTBOT_PATH} renew --post-hook "service nginx reload"
 }
 
 if [ -z \$# ] && [ \$# -gt 0 ]; then
