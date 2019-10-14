@@ -668,11 +668,7 @@ add() {
         fi
     fi
     if [ -z \$2 ]; then
-        site_dir_default=\$www_root
-        read -p "Specify the top-level ROOT ([> \$site_dir_default <]/\$1): " site_dir
-        if [ "\$site_dir" = "" ]; then
-            site_dir=\$site_dir_default
-        fi
+        site_dir=\$www_root
         read -p "Enter site directory NAME (\$site_dir/[> \$1 <]): " site_dir_name
         if [ "\$site_dir_name" = "" ]; then
             site_dir_name=\$1
