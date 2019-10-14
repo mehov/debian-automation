@@ -444,6 +444,18 @@ location ~ /\. {
 }
 EOF
 
+    # perform all letsencrypt validations in a separate directory
+    LETSENCRYPT_ROOT="${WWW_ROOT}/letsencrypt"
+    mkdir "${LETSENCRYPT_ROOT}"
+    cat > /etc/nginx/snippets/vhost-letsencrypt.conf << EOF
+location /.well-known {
+    allow all;
+    access_log /var/log/nginx/letsencrypt.access.log;
+    error_log /var/log/nginx/letsencrypt.error.log;
+    root ${LETSENCRYPT_ROOT};
+}
+EOF
+
     cat > /etc/nginx/snippets/suspicious.conf << 'EOF'
 # poor man's WAF
 map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
@@ -578,7 +590,12 @@ create_nginx_host() {
     server {
         listen 80;
         server_name \$2;
-        return 301 http://\$1\\\$request_uri;
+        access_log /var/log/nginx/\$2.access.log;
+        error_log /var/log/nginx/\$2.error.log;
+        include "snippets/vhost-letsencrypt.conf";
+        location / {
+            return 301 http://\$1\\\$request_uri;
+        }
     }
 EOF
     fi
@@ -590,6 +607,7 @@ EOF
         error_log /var/log/nginx/\$1.error.log;
         root \$3; # config_path \$4
         include "snippets/common.conf";
+        include "snippets/vhost-letsencrypt.conf";
         include "\$4/.ngaccess";
     }
 EOF
@@ -607,7 +625,7 @@ EOF
         printf " - email:   \${letsencrypt_email}\n"
         printf " - webroot: \$3\n"
         printf " - domains: \${domains}\n"
-        \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "\$3" -d "\${domains}"
+        \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "\${domains}"
         openssl dhparam -out /etc/letsencrypt/live/\$1/dhparam.pem 2048
         # cut -2 lines from the end of file (.ngaccess inclusion and closing bracket)
         # so that we can later append further configuration to this directive
@@ -617,7 +635,6 @@ EOF
         location / {
             return 301 https://\\\$server_name\\\$request_uri;
         }
-        location /.well-known/acme-challenge/ {}
     }
 EOF
 if [ ! -z "\${2}" ]; then
@@ -637,7 +654,9 @@ if [ ! -z "\${2}" ]; then
         ssl_stapling on;
         ssl_stapling_verify on;
         add_header Strict-Transport-Security max-age=15768000;
-        return 301 https://\$1\\\$request_uri;
+        location / {
+            return 301 https://\$1\\\$request_uri;
+        }
     }
 EOF
 fi
@@ -662,9 +681,6 @@ cat >> "\${sites_available}/\${conf_file_name}" << EOF
         ssl_stapling on;
         ssl_stapling_verify on;
         add_header Strict-Transport-Security max-age=15768000;
-        location /.well-known/acme-challenge/ {
-            return 301 http://\\\$server_name\\\$request_uri;
-        }
     }
 EOF
         restart_nginx 
