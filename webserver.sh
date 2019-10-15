@@ -411,7 +411,7 @@ EOF
     fi
 
     PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
-    cat > /etc/nginx/snippets/common.conf << EOF
+    cat > /etc/nginx/snippets/vhost-common.conf << EOF
 index index.php index.html index.htm;
 location ~ \.php {
     if (\$suspicious = 1) {
@@ -606,7 +606,7 @@ EOF
         access_log /var/log/nginx/\$1.access.log;
         error_log /var/log/nginx/\$1.error.log;
         root \$3; # config_path \$4
-        include snippets/common.conf;
+        include snippets/vhost-common.conf;
         include snippets/vhost-letsencrypt.conf;
         include "\$4/.ngaccess";
     }
@@ -668,7 +668,7 @@ cat >> "\${sites_available}/\${conf_file_name}" << EOF
         error_log /var/log/nginx/\$1.error.log;
         root \$3;
         include "\$4/.ngaccess";
-        include snippets/common.conf;
+        include snippets/vhost-common.conf;
         ssl on;
         ssl_certificate /etc/letsencrypt/live/\$1/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/\$1/privkey.pem;
