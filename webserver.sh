@@ -448,7 +448,7 @@ EOF
     LETSENCRYPT_ROOT="${WWW_ROOT}/letsencrypt"
     mkdir "${LETSENCRYPT_ROOT}"
     cat > /etc/nginx/snippets/vhost-letsencrypt.conf << EOF
-location /.well-known {
+location ^~ /.well-known/acme-challenge/ {
     allow all;
     access_log /var/log/nginx/letsencrypt.access.log;
     error_log /var/log/nginx/letsencrypt.error.log;
