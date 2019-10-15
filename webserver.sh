@@ -592,7 +592,7 @@ create_nginx_host() {
         server_name \$2;
         access_log /var/log/nginx/\$1-aliases.access.log;
         error_log /var/log/nginx/\$1-aliases.error.log;
-        include "snippets/vhost-letsencrypt.conf";
+        include snippets/vhost-letsencrypt.conf;
         location / {
             return 301 http://\$1\\\$request_uri;
         }
@@ -606,8 +606,8 @@ EOF
         access_log /var/log/nginx/\$1.access.log;
         error_log /var/log/nginx/\$1.error.log;
         root \$3; # config_path \$4
-        include "snippets/common.conf";
-        include "snippets/vhost-letsencrypt.conf";
+        include snippets/common.conf;
+        include snippets/vhost-letsencrypt.conf;
         include "\$4/.ngaccess";
     }
 EOF
@@ -668,7 +668,7 @@ cat >> "\${sites_available}/\${conf_file_name}" << EOF
         error_log /var/log/nginx/\$1.error.log;
         root \$3;
         include "\$4/.ngaccess";
-        include "snippets/common.conf";
+        include snippets/common.conf;
         ssl on;
         ssl_certificate /etc/letsencrypt/live/\$1/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/\$1/privkey.pem;
