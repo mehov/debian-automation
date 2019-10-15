@@ -590,8 +590,8 @@ create_nginx_host() {
     server {
         listen 80;
         server_name \$2;
-        access_log /var/log/nginx/\$2.access.log;
-        error_log /var/log/nginx/\$2.error.log;
+        access_log /var/log/nginx/\$1-aliases.access.log;
+        error_log /var/log/nginx/\$1-aliases.error.log;
         include "snippets/vhost-letsencrypt.conf";
         location / {
             return 301 http://\$1\\\$request_uri;
