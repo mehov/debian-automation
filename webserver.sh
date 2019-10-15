@@ -445,8 +445,8 @@ location ~ /\. {
 EOF
 
     # perform all letsencrypt validations in a separate directory
-    LETSENCRYPT_ROOT="${WWW_ROOT}/letsencrypt"
-    mkdir "${LETSENCRYPT_ROOT}"
+    LETSENCRYPT_ROOT="/usr/share/nginx/letsencrypt"
+    mkdir -p "${LETSENCRYPT_ROOT}"
     cat > /etc/nginx/snippets/vhost-letsencrypt.conf << EOF
 location ^~ /.well-known/acme-challenge/ {
     allow all;
