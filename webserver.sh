@@ -623,7 +623,7 @@ EOF
         letsencrypt_email="webmaster@\$1"
         printf "Requesting a certificate from Let's Encrypt:\n"
         printf " - email:   \${letsencrypt_email}\n"
-        printf " - webroot: \$3\n"
+        printf " - webroot: ${LETSENCRYPT_ROOT}\n"
         printf " - domains: \${domains}\n"
         \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "\${domains}"
         openssl dhparam -out /etc/letsencrypt/live/\$1/dhparam.pem 2048
