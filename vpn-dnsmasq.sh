@@ -41,3 +41,10 @@ iptables -A INPUT -p udp --dport 53 -s 192.168.43.0/24 -j ACCEPT
 iptables -A INPUT -p tcp --dport 53 -s 192.168.43.0/24 -j ACCEPT
 iptables -A INPUT -p udp --dport 53 -j DROP
 iptables -A INPUT -p tcp --dport 53 -j DROP
+
+iptables-save > /etc/iptables-dns.rules
+cat > /etc/network/if-up.d/iptables-dns << EOF
+#!/bin/sh
+iptables-restore < /etc/iptables-dns.rules
+EOF
+chmod +x /etc/network/if-up.d/iptables-dns 
