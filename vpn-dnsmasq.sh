@@ -34,3 +34,10 @@ sed -i '/^ms-dns 8\.8\.4\.4/d' /etc/ppp/options.xl2tpd
 
 service ipsec restart
 service dnsmasq restart
+
+# block dns for everyone else
+# (https://serverfault.com/questions/374846/block-all-incoming-dns-requests-except-from-ips-x-y/374853#374853)
+iptables -A INPUT -p udp --dport 53 -s 192.168.43.0/24 -j ACCEPT
+iptables -A INPUT -p tcp --dport 53 -s 192.168.43.0/24 -j ACCEPT
+iptables -A INPUT -p udp --dport 53 -j DROP
+iptables -A INPUT -p tcp --dport 53 -j DROP
