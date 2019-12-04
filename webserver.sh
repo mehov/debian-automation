@@ -1086,7 +1086,7 @@ if [ "${noroot_Yn}" = "y" ]; then
     sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" /etc/ssh/sshd_config
     # Whitelist the non-SSH user
     echo "AllowUsers ${SSH_USER}" >> /etc/ssh/sshd_config
-    useradd -md "${DIR_HOME}" -g sudo $SSH_USER
+    useradd -s /bin/bash -md "${DIR_HOME}" -g sudo $SSH_USER
     usermod -a -G www-data ${SSH_USER}
     if [ -d "${WWW_ROOT}" ]; then
         chown -R ${SSH_USER}:www-data "${WWW_ROOT}"
