@@ -234,6 +234,8 @@ install() {
 
     do_install ca-certificates
     do_install wget
+    do_install gnupg
+    do_install gnupg2
 
     debian_version=`cat /etc/debian_version | sed -r 's/\..*//'`
     debian_codename=$(lsb_release -sc)
