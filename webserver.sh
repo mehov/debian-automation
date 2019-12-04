@@ -1068,6 +1068,8 @@ if [ "${LECertbot_Yn}" = "" ] ||  [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_
 fi
 
 echo "Updating SSH configuration"
+# stop accepting client environment variables
+sed -i "s/^AcceptEnv/#AcceptEnv/g" /etc/ssh/sshd_config
 # Update the SSH port
 sed -i "s/#Port/Port/g" /etc/ssh/sshd_config
 sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
