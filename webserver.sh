@@ -1109,6 +1109,7 @@ if [ "${nopass_Yn}" = "y" ]; then
     read -p "Please paste your public key here: " SSH_USER_PUBKEY
     echo ${SSH_USER_PUBKEY} > "${DIR_HOME}"/.ssh/authorized_keys
 fi
+chown -R ${SSH_USER}:sudo "${DIR_HOME}"
 # https://infosec-handbook.eu/blog/wss1-basic-hardening/#s3
 echo "" >> /etc/ssh/sshd_config
 sed -i '/^KexAlgorithms /d' /etc/ssh/sshd_config
