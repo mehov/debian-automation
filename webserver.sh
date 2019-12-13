@@ -924,6 +924,87 @@ certbot_update_all() {
     ${CERTBOT_PATH} renew --webroot -w "${LETSENCRYPT_ROOT}" --post-hook "service nginx reload"
 }
 
+# Receive a folder path as an argument, make it writable to the web server
+# Optionally block HTTP access to that folder, or block PHP execution
+permit_folder_writing() {
+    # remove the trailing slash, if any
+    ROOT=\${www_root%/}
+    DIR=\${1%/}
+    # validate the folder is inside web root
+    case \$DIR in
+        "\${ROOT}"*)
+            ;;
+        *)
+            echo "A writable directory has to be inside the web root"
+            exit 1
+            ;;
+    esac
+    # Confirm the folder path
+    echo "Setting \${DIR} to be writable by the web server."
+    # Collect input
+    read -p "Empty the folder? [Y/n]: " RM_Yn
+    if [ "\${RM_Yn}" = "" ] || [ "\${RM_Yn}" = "Y" ]; then
+        RM_Yn="y"
+    fi
+    read -p "Block HTTP access? (Recommended.) [Y/n]: " BH_Yn
+    if [ "\${BH_Yn}" = "" ] || [ "\${BH_Yn}" = "Y" ]; then
+        BH_Yn="y"
+    fi
+    if [ "y" != "\${BH_Yn}" ]; then
+        echo "Leaving folder both writable and accessible may let attackers upload, access and execute malicious scripts."
+        read -p "Block PHP execution? (Highly recommended.) [Y/n]: " BP_Yn
+        if [ "\${BP_Yn}" = "" ] || [ "\${BP_Yn}" = "Y" ]; then
+            BP_Yn="y"
+        fi
+    fi
+    # clean up, if requested
+    if [ "y" = "\${RM_Yn}" ]; then
+        rm -rf "\${DIR}"/*
+    fi
+    # set the writing permisions
+    chgrp -R www-data "\${DIR}"
+    chmod g+ws "\${DIR}"
+    # abort if no HTTP or PHP blocking is requested
+    if [ "y" != "\${BH_Yn}" ] && [ "y" != "\${BP_Yn}" ]; then
+        exit 0
+    fi
+    # traverse the tree looking for .ngaccess
+    TRY_PATH="\${DIR}" # start with the given path
+    # until we hit the web root
+    NGACCESS=""
+    while [ "\${TRY_PATH}" != "\${ROOT}" ]; do
+        if [ -e "\$TRY_PATH/.ngaccess" ]; then
+            NGACCESS="\$TRY_PATH/.ngaccess"
+            break
+        else
+            # go one level deeper
+            TRY_PATH=\$(dirname \$TRY_PATH)
+        fi
+    done
+    # if the file was found
+    if [ -e "\${NGACCESS}" ]; then
+        DIR_WEB=\$(echo "\${DIR}" | sed -e "s@\${TRY_PATH}@@g")
+        if [ "y" = "\${BH_Yn}" ]; then
+cat >> "\${NGACCESS}" << BHEOF
+location ~ \${DIR_WEB} {
+    return 404;
+}
+BHEOF
+        fi
+        if [ "y" = "\${BP_Yn}" ]; then
+cat >> "\${NGACCESS}" << BHEOF
+location ~* \${DIR_WEB}/.*\.php {
+    return 404;
+}
+BHEOF
+        fi
+
+    else
+        echo "Could not find a .ngaccess file. Stopped at \${TRY_PATH}"
+    fi
+
+}
+
 if [ -z \$# ] && [ \$# -gt 0 ]; then
     for i; do
         key=\`echo \$i | cut -d = -f 1 | cut -c 3-\`
@@ -991,6 +1072,9 @@ case "\$action" in
         ;;
     "certupdate")
         certbot_update_all
+        ;;
+    "writable")
+        permit_folder_writing \$hostname
         ;;
     *)
         echo "**** USAGE:"
