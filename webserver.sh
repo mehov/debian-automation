@@ -998,7 +998,7 @@ location ~* \${DIR_WEB}/.*\.php {
 }
 BHEOF
         fi
-
+        service nginx reload
     else
         echo "Could not find a .ngaccess file. Stopped at \${TRY_PATH}"
     fi
