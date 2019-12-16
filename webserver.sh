@@ -278,6 +278,7 @@ EOF
     do_install cron
     do_install systemd
     do_install curl
+    do_install vim
     do_install easy-rsa
     do_install logrotate
     do_install ntp
