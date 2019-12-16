@@ -286,6 +286,7 @@ EOF
     dpkg-reconfigure -f noninteractive tzdata
     do_install unattended-upgrades
     dpkg-reconfigure -f noninteractive unattended-upgrades
+    do_install python3-gi # fix "Unable to monitor PrepareForShutdown() signal"
     do_install fail2ban
 
     #do_install libpcre3-dev
