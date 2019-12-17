@@ -90,6 +90,10 @@ install() {
     read -p "Install PHP? [Y/n]: " PHP_Yn
     if [ "${PHP_Yn}" = "" ] ||  [ "${PHP_Yn}" = "Y" ] || [ "${PHP_Yn}" = "y" ]; then
         PHP_VER="7"
+        read -p "Expected size of a single PHP process, in MB [64]: " PHP_PSZ
+        if [ -z "${PHP_PSZ}" ]; then
+            PHP_PSZ="64"
+        fi
     else 
         PHP_VER="0"
     fi
@@ -279,6 +283,7 @@ EOF
     do_install systemd
     do_install curl
     do_install vim
+    do_install bc
     do_install easy-rsa
     do_install logrotate
     do_install ntp
@@ -519,6 +524,28 @@ fi
 if [ ! "${PHP_VER}" = "0" ]; then
     curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
+    # CONFIGURING PHP-FPM
+    # find www pool config path, regardless of php-fpm version
+    PHP_WPCNF=$(find /etc/php  -path "*/fpm/pool.d/*" -type f -name "www.conf")
+    # switch to static 
+    # (haydenjames.io/php-fpm-tuning-using-pm-static-max-performance/)
+    sed -i "s/^;* *pm *= *[^ ]*/pm = static/" ${PHP_WPCNF}
+    # set max requests until respawn
+    sed -i "s/^;* *pm\.max_requests *= *[^ ]*/pm.max_requests = 512/" ${PHP_WPCNF}
+    # calculate max_children based on server RAM and estimated process size
+    PHP_PSZ_kB=$(echo "${PHP_PSZ}*1024" | bc) # convert from MB to kB
+    if [ ! "$PORT_MYSQL" = "0" ]; then
+        PHP_PSHR=0.5 # decrease if this server also hosts MySQL
+    else
+        PHP_PSHR=0.8 # increase if no MySQL runs on this server
+    fi
+    SRV_RAM_TOTAL=$(awk '/MemTotal/ {print $2}' /proc/meminfo) # total RAM
+    SRV_RAM_SHARE=$(echo "${SRV_RAM_TOTAL}*${PHP_PSHR}" | bc) # calculated share
+    PHP_CHLDN=$(echo "${SRV_RAM_SHARE}/${PHP_PSZ_kB}" | bc) # how many children
+    echo "Total RAM: ${SRV_RAM_TOTAL} kB. Allocated to PHP: ${SRV_RAM_SHARE} kB"
+    echo "Setting pm.max_children to ${PHP_CHLDN}"
+    # set max_children
+    sed -i "s/^;* *pm\.max_children *= *[^ ]*/pm.max_children = ${PHP_CHLDN}/" ${PHP_WPCNF}
 fi
 
 if [ ! "$PORT_MYSQL" = "0" ]; then
