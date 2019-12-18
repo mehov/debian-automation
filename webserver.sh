@@ -12,7 +12,7 @@ PORT_MYSQL_DEFAULT="330${PORT_MYSQL_DEFAULT}"
 SSH_USER_DEFAULT="admin"
 FTP_USER="ftp-data"
 WWW_ROOT="/var/www"
-CERTBOT_PATH="/root/certbot-auto"
+CERTBOT_PATH="/usr/local/bin/certbot-auto"
 HOSTMANAGER_PATH="/root/spanel.sh"
 SSH_CLIENT_IP=$(who -m --ips | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
 
@@ -1174,7 +1174,8 @@ if [ "${LECertbot_Yn}" = "" ] ||  [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_
     # install certbot for letsencrypt
     # https://certbot.eff.org/all-instructions/#web-hosting-service-nginx
     wget -O ${CERTBOT_PATH} https://dl.eff.org/certbot-auto
-    chmod a+x ${CERTBOT_PATH}
+    chown root "${CERTBOT_PATH}"
+    chmod 0755 "${CERTBOT_PATH}"
     ${CERTBOT_PATH} --non-interactive
     echo "0 4 1,15 * * root ${HOSTMANAGER_PATH} certupdate >> /var/log/certupdate.log 2>&1" > /etc/cron.d/certupdate
 fi
