@@ -480,11 +480,11 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~*file_(put|get)_contents" 1;
     "~*call_user_func_array" 1;
     "~*(mb_)?ereg_replace" 1;
-    "~*char(.*)?(\(|%28)" 1;
-    "~*concat(.*)?(\(|%28)" 1;
-    "~*eval(.*)?(\(|%28)" 1;
-    "~*(union(.*))?select(.*)from" 1;
-    "~*union(.*)select((.*)from)?" 1;
+    "~*char([^a-zA-Z0-9]*)?(\(|%28)" 1;
+    "~*concat([^a-zA-Z0-9]*)?(\(|%28)" 1;
+    "~*eval([^a-zA-Z0-9]*)?(\(|%28)" 1;
+    "~*(union([^a-zA-Z0-9]*))?select([^a-zA-Z0-9]*)from" 1;
+    "~*union([^a-zA-Z0-9]*)select(([^a-zA-Z0-9]*)from)?" 1;
 }
 log_format suslog '$remote_addr - $remote_user $host [$time_local] '
     '"$request" $status $body_bytes_sent '
