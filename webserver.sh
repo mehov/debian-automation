@@ -71,7 +71,7 @@ do_uninstall() {
 }
 
 report_append()  {
-    echo "$1: $2" >> ~/bonjour.txt
+    echo "$1=$2" >> ~/.bonjour.ini
 }
 
 
@@ -162,7 +162,7 @@ install() {
     if [ "$PORT_SSH" = "" ]; then
         PORT_SSH=$PORT_SSH_DEFAULT
     fi
-    report_append "PORT_SSH" $PORT_SSH
+    report_append "SSH_PORT" $PORT_SSH
 
     read -p "FTP port, or '0' to skip [${PORT_FTP_DEFAULT}]: " PORT_FTP
     if [ "$PORT_FTP" = "" ]; then
@@ -190,8 +190,9 @@ install() {
             useradd -d "$WWW_ROOT" -p $cppassword -g www-data -s /bin/sh -M $FTP_USER
             chown $FTP_USER:www-data $WWW_ROOT
         fi
-        report_append "PORT_FTP" $PORT_FTP
-        report_append "$FTP_USER" $wdpassword
+        report_append "FTP_PORT" $PORT_FTP
+        report_append "FTP_USER" $FTP_USER
+        report_append "FTP_PASS" $wdpassword
     else
         echo "**** FTP SKIPPED"
     fi
@@ -213,7 +214,7 @@ install() {
         if [ "$MYSQL_REMO_PASS" = "" ]; then
             MYSQL_REMO_PASS=${MYSQL_REMO_PASS_RAND}
         fi
-        report_append "PORT_MYSQL" $PORT_MYSQL
+        report_append "MYSQL_PORT" $PORT_MYSQL
         report_append "MYSQL_ROOT_PASS" $MYSQL_ROOT_PASS
         report_append "MYSQL_REMO_USER" $MYSQL_REMO_USER
         report_append "MYSQL_REMO_PASS" $MYSQL_REMO_PASS
