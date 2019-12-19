@@ -288,8 +288,6 @@ EOF
     do_install logrotate
     do_install ntp
     do_install tzdata
-    echo "UTC" > /etc/timezone
-    dpkg-reconfigure -f noninteractive tzdata
     do_install unattended-upgrades
     dpkg-reconfigure -f noninteractive unattended-upgrades
     do_install python3-gi # fix "Unable to monitor PrepareForShutdown() signal"
@@ -327,7 +325,8 @@ EOF
         do_install php${PHP_VER}*-xml
         do_install php${PHP_VER}*-opcache
     fi
-
+    # set the timezone
+    timedatectl set-timezone UTC
 # initial fail2ban jail configuration
 cat > /etc/fail2ban/jail.local << EOF
 [DEFAULT]
