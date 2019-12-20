@@ -34,12 +34,11 @@ random_string() {
     echo `cat /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w $length | head -1`
 }
 restart_nginx() {
-    if [ -e /var/run/nginx.pid ];
-        then
-            command='restart'
-        else
-            command='start'
-        fi
+    if [ -e /var/run/nginx.pid ]; then
+        command='restart'
+    else
+        command='start'
+    fi
     service nginx $command
 }
 add_alias() {
@@ -198,24 +197,20 @@ add() {
     create_public_dir="N"
 
     if [ -z $3 ]; then
-    read -p "Create MySQL database? [Y/n]: " create_database
-    if [ "$create_database" != "n" ] && [ "$create_database"!="N" ]
-        then
-            read -p "Enter MySQL database name [$database_name_random]: " database_name
-            if [ "$database_name" = "" ]
-                then
-                    database_name=$database_name_random
-                fi
+        read -p "Create MySQL database? [Y/n]: " create_database
+        if [ "$create_database" != "n" ] && [ "$create_database"!="N" ]; then
+        read -p "Enter MySQL database name [$database_name_random]: " database_name
+            if [ "$database_name" = "" ]; then
+                database_name=$database_name_random
+            fi
             read -p "Enter MySQL user [$database_user_random]: " database_user
-            if [ "$database_user" = "" ]
-                then
-                    database_user=$database_user_random
-                fi
+            if [ "$database_user" = "" ]; then
+                database_user=$database_user_random
+            fi
             read -p "Enter MySQL password [$database_password_waitforit_random]: " database_password
-            if [ "$database_password" = "" ]
-                then
-                    database_password=$database_password_waitforit_random
-                fi
+            if [ "$database_password" = "" ]; then
+                database_password=$database_password_waitforit_random
+            fi
         fi
     else
         if [ $3 = "N" ] || [ $3 = "n" ]; then
@@ -255,46 +250,40 @@ add() {
     echo ""
     echo "ADDING VIRTUALHOST $1"
     echo -n "Web root... "
-    if ! [ -d $site_dir ];
-        then
-            mkdir $site_dir
-            chown $ftp_user:www-data $site_dir
-        fi
-    if ! [ -d $site_dir ]
-        then
-            echo "ERROR: "$site_dir" could not be created."
+    if ! [ -d $site_dir ]; then
+        mkdir $site_dir
+        chown $ftp_user:www-data $site_dir
+    fi
+    if ! [ -d $site_dir ]; then
+        echo "ERROR: "$site_dir" could not be created."
+    else
+        echo $site_dir" OK"
+        if [ "$create_public_dir" = "y" ] || [ "$create_public_dir" = "Y" ];then
+            public_dir=$site_dir"/"$public_dir_name_default
+            mkdir $public_dir
+            chown $ftp_user:www-data $public_dir
         else
-            echo $site_dir" OK"
-            if [ "$create_public_dir" = "y" ] || [ "$create_public_dir" = "Y" ]
-                then
-                    public_dir=$site_dir"/"$public_dir_name_default
-                    mkdir $public_dir
-                    chown $ftp_user:www-data $public_dir
-                else
-                    public_dir=$site_dir
-            fi
+            public_dir=$site_dir
         fi
+    fi
     ngaccess_file="${site_dir}/.ngaccess"
     echo -n ".ngaccess file... "
-    if ! [ -f $ngaccess_file ]
-        then
-            if ! touch $ngaccess_file
-                then
-                    echo "ERROR (creating)."
-                else
-                    if ! echo "#this is the part of the main nginx config
-location / {
-    try_files \$uri \$uri/ /index.php?\$args;
-}" > $ngaccess_file
-                        then
-                            echo "ERROR (writing)."
-                        else
-                            echo "done."
-                        fi
-                fi
+    if ! [ -f $ngaccess_file ]; then
+        if ! touch $ngaccess_file; then
+            echo "ERROR (creating)."
         else
-            echo "exists."
+            if ! echo "#this is the part of the main nginx config
+location / {
+try_files \$uri \$uri/ /index.php?\$args;
+}" > $ngaccess_file; then
+                echo "ERROR (writing)."
+            else
+                echo "done."
+            fi
         fi
+    else
+        echo "exists."
+    fi
     echo "# FTP p:${FTP_PORT} u:${website_user} p:${wdpassword}" >> ${ngaccess_file}
     create_nginx_host "$1" "${aliases}" "${public_dir}" "${site_dir}" "${CERTBOT_PATH_OPT}"
     #for alias in $aliases; do
@@ -302,26 +291,23 @@ location / {
     #done
 
     ### MySQL
-    if [ "$create_database" != "n" ] && [ "$create_database"!="N" ]
-        then
-            $mysql -uroot -p$mysql_password -e "CREATE DATABASE \`$database_name\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-            $mysql -uroot -p$mysql_password -e "GRANT CREATE,SELECT,INSERT,UPDATE,DELETE ON $database_name.* TO $database_user@localhost IDENTIFIED BY '$database_password';"
-            $mysql -uroot -p$mysql_password -e "GRANT ALL ON $database_name.* TO $mysql_admin@localhost IDENTIFIED BY '$mysql_admin_password';"
-            printf "Database:\n-name: $database_name\n-user: $database_user\n-pass: $database_password\n"
-            echo -n "Config file... "
-            config_file=$site_dir"/config_spanel.php"
-            if ! touch $config_file
-                then
-                    echo "ERROR (creating)."
-                else
-                    if ! printf "<?php\n\$mysql=array();\n\$mysql['host']='localhost';\n\$mysql['name']='$database_name';\n\$mysql['user']='$database_user';\n\$mysql['pass']='$database_password';\n" > $config_file
-                        then
-                            echo "ERROR (writing)."
-                        else
-                            echo "done."
-                        fi
-                fi
+    if [ "$create_database" != "n" ] && [ "$create_database"!="N" ]; then
+        $mysql -uroot -p$mysql_password -e "CREATE DATABASE \`$database_name\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+        $mysql -uroot -p$mysql_password -e "GRANT CREATE,SELECT,INSERT,UPDATE,DELETE ON $database_name.* TO $database_user@localhost IDENTIFIED BY '$database_password';"
+        $mysql -uroot -p$mysql_password -e "GRANT ALL ON $database_name.* TO $mysql_admin@localhost IDENTIFIED BY '$mysql_admin_password';"
+        printf "Database:\n-name: $database_name\n-user: $database_user\n-pass: $database_password\n"
+        echo -n "Config file... "
+        config_file=$site_dir"/config_spanel.php"
+        if ! touch $config_file; then
+            echo "ERROR (creating)."
+        else
+            if ! printf "<?php\n\$mysql=array();\n\$mysql['host']='localhost';\n\$mysql['name']='$database_name';\n\$mysql['user']='$database_user';\n\$mysql['pass']='$database_password';\n" > $config_file; then
+                echo "ERROR (writing)."
+            else
+                echo "done."
+            fi
         fi
+    fi
     chown -R ${website_user}:www-data ${site_dir}
 }
 remove_nginx_host() {
@@ -344,50 +330,44 @@ remove_nginx_host() {
 remove() {
     conf_file_name=`nginx_vhost_conf_name ${1}`
     config_nginx="${sites_available}/${conf_file_name}"
-    if [ -f $config_nginx ]
-        then
-            echo ""
-            echo "CLEANING THE DATABASE"
-            site_dir=`cat $config_nginx | grep config_path | sed -e "s/root \(.*\); # config_path \(.*\)/\2/g"`
-            echo $site_dir
-            config_php=$site_dir"/config.php"
-            if [ -f $config_php ]
-                then
-                    database_name=`cat $config_php | grep name | sed -e "s/.*='\(.*\)';/\1/g"`
-                    database_user=`cat $config_php | grep user | sed -e "s/.*='\(.*\)';/\1/g"`
-                else
-                    echo "Can't find the config.php file!"
-                    read -p "Remove the database manually? [Y/n]:" remove_database
-                    if [ "$remove_database" != "n" ] && [ "$remove_database"!="N" ]
-                        then
-                            read -p "MySQL database name: " database_name
-                            read -p "MySQL database user: " database_user
-                        fi
-                fi
-            if [ "$database_name" != "" ] && [ "$database_user" != "" ]
-                then
-                    $mysql -uroot -p$mysql_password -e "DROP DATABASE $database_name;"
-                    $mysql -uroot -p$mysql_password -e "DROP USER '$database_user'@localhost;"
-                fi
-            echo ""
-            echo "REMOVING $1 VIRTUALHOST"
-            read -p "Remove $site_dir? [y/N]: " remove_dir
-            echo -n "Web root... "
-            if [ "$remove_dir" != "y" ] && [ "$remove_dir" != "Y" ]
-                then
-                    echo "untouched."
-                else
-                    if ! rm -r $site_dir
-                        then
-                            echo "ERROR."
-                        else
-                            echo "removed."
-                        fi
-                fi
-            remove_nginx_host $1
+    if [ -f $config_nginx ]; then
+        echo ""
+        echo "CLEANING THE DATABASE"
+        site_dir=`cat $config_nginx | grep config_path | sed -e "s/root \(.*\); # config_path \(.*\)/\2/g"`
+        echo $site_dir
+        config_php=$site_dir"/config.php"
+        if [ -f $config_php ]; then
+            database_name=`cat $config_php | grep name | sed -e "s/.*='\(.*\)';/\1/g"`
+            database_user=`cat $config_php | grep user | sed -e "s/.*='\(.*\)';/\1/g"`
         else
-            echo "Can't find the config file $config_nginx"
+            echo "Can't find the config.php file!"
+            read -p "Remove the database manually? [Y/n]:" remove_database
+            if [ "$remove_database" != "n" ] && [ "$remove_database"!="N" ]; then
+                read -p "MySQL database name: " database_name
+                read -p "MySQL database user: " database_user
+            fi
         fi
+        if [ "$database_name" != "" ] && [ "$database_user" != "" ]; then
+            $mysql -uroot -p$mysql_password -e "DROP DATABASE $database_name;"
+            $mysql -uroot -p$mysql_password -e "DROP USER '$database_user'@localhost;"
+        fi
+        echo ""
+        echo "REMOVING $1 VIRTUALHOST"
+        read -p "Remove $site_dir? [y/N]: " remove_dir
+        echo -n "Web root... "
+        if [ "$remove_dir" != "y" ] && [ "$remove_dir" != "Y" ]; then
+            echo "untouched."
+        else
+            if [ ! rm -r $site_dir ]; then
+                echo "ERROR."
+            else
+                echo "removed."
+            fi
+        fi
+        remove_nginx_host $1
+    else
+        echo "Can't find the config file $config_nginx"
+    fi
 }
 
 certbot_update_all() {
