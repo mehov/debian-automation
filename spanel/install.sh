@@ -469,6 +469,8 @@ location ^~ /.well-known/acme-challenge/ {
     root ${LETSENCRYPT_ROOT};
 }
 EOF
+    # generate the diffie-hellman parameters
+    openssl dhparam -out /etc/nginx/dhparam.pem 4096
 
     cat > /etc/nginx/snippets/suspicious.conf << 'EOF'
 # poor man's WAF
