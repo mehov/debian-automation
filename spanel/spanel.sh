@@ -318,12 +318,7 @@ remove_nginx_host() {
     if [ -f "${sites_available}/${conf_file_name}" ]; then
         rm "${sites_available}/${conf_file_name}"
     fi
-    if [ -d "/etc/letsencrypt/live/${1}" ]; then
-        rm -rf "/etc/letsencrypt/live/${1}"
-    fi
-    if [ -d "/etc/letsencrypt/archive/${1}" ]; then
-        rm -rf "/etc/letsencrypt/archive/${1}"
-    fi
+    ${CERTBOT_PATH} delete --cert-name "${1}"
 }
 
 remove() {
