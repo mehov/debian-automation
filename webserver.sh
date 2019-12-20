@@ -81,6 +81,10 @@ report_append()  {
 
 
 install() {
+    # start the config
+    report_append "WWW_ROOT" $WWW_ROOT
+    report_append "CERTBOT_PATH" $CERTBOT_PATH
+
     read -p "Install Nginx? [Y/n]: " NGINX_Yn
     if [ "${NGINX_Yn}" = "" ] ||  [ "${NGINX_Yn}" = "Y" ] || [ "${NGINX_Yn}" = "y" ]; then
         PORT_HTTP="80"
@@ -103,7 +107,6 @@ install() {
         read -p "Install the Let's Encrypt Certbot? [Y/n]: " LECertbot_Yn
     fi
 
-    cat /dev/null > ~/bonjour.txt
     hostname_old=`hostname`
     if [ "${hostname_old}" = "" ] || [ "${hostname_old}" = "vps" ]; then
         read -p "New hostname[+]: " nhostname
@@ -285,6 +288,7 @@ EOF
     do_install curl
     do_install vim
     do_install bc
+    do_install cfget
     do_install easy-rsa
     do_install logrotate
     do_install ntp
@@ -455,6 +459,7 @@ EOF
 
     # perform all letsencrypt validations in a separate directory
     LETSENCRYPT_ROOT="/usr/share/nginx/letsencrypt"
+    report_append "LETSENCRYPT_ROOT" ${LETSENCRYPT_ROOT}
     mkdir -p "${LETSENCRYPT_ROOT}"
     cat > /etc/nginx/snippets/vhost-letsencrypt.conf << EOF
 location ^~ /.well-known/acme-challenge/ {
@@ -569,8 +574,11 @@ if [ "\$(whoami)" != 'root' ]; then
 fi
 
 ### Script params
-www_root="$WWW_ROOT"
-ftp_user="$FTP_USER"
+CERTBOT_PATH=\$(cfget -qC ~/.bonjour.ini "CERTBOT_PATH")
+LETSENCRYPT_ROOT=\$(cfget -qC ~/.bonjour.ini "LETSENCRYPT_ROOT")
+www_root=\$(cfget -qC ~/.bonjour.ini "WWW_ROOT")
+ftp_user=\$(cfget -qC ~/.bonjour.ini "FTP_USER")
+FTP_PORT=\$(cfget -qC ~/.bonjour.ini "FTP_PORT")
 if ! [ id -u "\$ftp_user" >/dev/null 2>&1 ]; then
     ftp_user="www-data"
 fi
@@ -579,9 +587,9 @@ sites_available="\${nginx_conf_dir}/sites-available"
 sites_enabled="\${nginx_conf_dir}/sites-enabled"
 mysql="\$(which mysql)"
 # mysql root password
-mysql_password="$MYSQL_ROOT_PASS"
-mysql_admin="$MYSQL_REMO_USER"
-mysql_admin_password="$MYSQL_REMO_PASS"
+mysql_password="\$(cfget -qC ~/.bonjour.ini "MYSQL_ROOT_PASS")"
+mysql_admin="\$(cfget -qC ~/.bonjour.ini "MYSQL_REMO_USER")"
+mysql_admin_password="\$(cfget -qC ~/.bonjour.ini "MYSQL_REMO_PASS")"
 
 ### Functions
 random_string() {
@@ -654,9 +662,9 @@ EOF
         letsencrypt_email="webmaster@\$1"
         printf "Requesting a certificate from Let's Encrypt:\n"
         printf " - email:   \${letsencrypt_email}\n"
-        printf " - webroot: ${LETSENCRYPT_ROOT}\n"
+        printf " - webroot: \${LETSENCRYPT_ROOT}\n"
         printf " - domains: \${domains}\n"
-        \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "\${domains}"
+        \$5 certonly --non-interactive --agree-tos --email "\${letsencrypt_email}" --webroot -w "\${LETSENCRYPT_ROOT}" -d "\${domains}"
         openssl dhparam -out /etc/letsencrypt/live/\$1/dhparam.pem 2048
         # cut -3 lines from the end of file (.ngaccess, vhost-common.conf, bracket)
         # that way we can later append further configuration to this directive
@@ -725,7 +733,7 @@ add() {
     read -p "Install LetsEncrypt SSL? [Y/n]: " SSL_Yn
     CERTBOT_PATH_OPT=""
     if [ "\${SSL_Yn}" = "" ] || [ "\${SSL_Yn}" = "Y" ] || [ "\${SSL_Yn}" = "y" ]; then
-        CERTBOT_PATH_OPT="${CERTBOT_PATH}"
+        CERTBOT_PATH_OPT="\${CERTBOT_PATH}"
     fi
     public_dir_name_default="public_html"
     database_name_random=\`echo \$1 | sed -e 's/\W//g'\`;
@@ -854,7 +862,7 @@ location / {
         else
             echo "exists."
         fi
-    echo "# FTP p:${PORT_FTP} u:\${website_user} p:\${wdpassword}" >> \${ngaccess_file}
+    echo "# FTP p:\${FTP_PORT} u:\${website_user} p:\${wdpassword}" >> \${ngaccess_file}
     chown -R \${website_user}:www-data \${site_dir}
     create_nginx_host "\$1" "\${aliases}" "\${public_dir}" "\${site_dir}" "\${CERTBOT_PATH_OPT}"
     #for alias in \$aliases; do
@@ -950,7 +958,7 @@ remove() {
 }
 
 certbot_update_all() {
-    ${CERTBOT_PATH} renew --webroot -w "${LETSENCRYPT_ROOT}" --post-hook "service nginx reload"
+    \${CERTBOT_PATH} renew --webroot -w "\${LETSENCRYPT_ROOT}" --post-hook "service nginx reload"
 }
 
 # Receive a folder path as an argument, make it writable to the web server
