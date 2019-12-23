@@ -523,6 +523,8 @@ action = iptables-allports
 maxretry = 4
 logpath = /var/log/nginx/suspicious.log
 EOF
+    touch /var/log/nginx/suspicious.log
+    chown www-data:www-data /var/log/nginx/suspicious.log
     mkdir /var/log/nginx-attacks
 
 service nginx start
