@@ -449,76 +449,30 @@ BHEOF
 
 }
 
-if [ -z $# ] && [ $# -gt 0 ]; then
-    for i; do
-        key=`echo $i | cut -d = -f 1 | cut -c 3-`
-        val=`echo $i | cut -d = -f 2`
-        case $key in
-            "action" | "act")
-                case $val in
-                    "add" | "a")
-                        action="add"
-                    ;;
-                    "remove" | "r")
-                        action="remove"
-                    ;;
-                esac
-                ;;
-            "hostname" | "host")
-                hostname=$val
-                ;;
-            "alias")
-                alias=$val
-                ;;
-            "dir")
-                dirname=$val
-                ;;
-            "db")
-                database=$val
-                ;;
-        esac
-    done
-fi
-
-if [ -z $action ]; then
-    case $1 in
-        "add" | "a" | "-a")
-            action="add"
-            ;;
-        "remove" | "r" | "-r")
-            action="remove"
-            ;;
-        *)
-            action="$1"
-            ;;
-    esac
-    hostname="$2"
-fi;
-
-echo "ACTION: ${action}"
+echo "ACTION: ${1}"
 ### What to do?
-case "$action" in
+case "${1}" in
     "remove")
-        if [ "$hostname" = "" ]; then
+        if [ "${2}" = "" ]; then
             echo "Please specify the primary hostname"
             exit 1;
         fi
-        remove $hostname
+        remove "${2}"
         restart_nginx
         ;;
     "add")
-        if [ "$hostname" = "" ]; then
+        if [ "${2}" = "" ]; then
             echo "Please specify the primary hostname"
             exit 1;
         fi
-        add $hostname $dirname $database $alias
+        add "${2}"
         restart_nginx
         ;;
     "certupdate")
         certbot_update_all
         ;;
     "writable")
-        permit_folder_writing $hostname
+        permit_folder_writing "${2}"
         ;;
     *)
         echo "**** USAGE:"
