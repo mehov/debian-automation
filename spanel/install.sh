@@ -749,9 +749,12 @@ if [ -n "${WHTLST_IPS}" ]; then
         for PORT in ${WHTLST_PORTS}; do
             # only if the port number is not empty and greater than zero
             if [ -n "${PORT}" ] && [ "${PORT}" -gt 0 ]; then
+                echo "Blocking port ${PORT} for everyone else"
                 # use -A to make these least specific rules apply last
                 iptables -A INPUT -p tcp --dport ${PORT} -j DROP
                 iptables -A OUTPUT -p tcp --sport ${PORT} -j DROP
+            else
+                echo "Skipping '${PORT}' as it isn't a valid port number"
             fi
         done
     fi
