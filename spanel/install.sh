@@ -758,6 +758,7 @@ if [ -n "${WHTLST_IPS}" ]; then
             fi
         done
     fi
+    iptables-save > /etc/iptables.conf
 fi
 # set the iptables rules to be restored on boot
 cat > /etc/network/if-up.d/iptables << EOF
