@@ -747,9 +747,12 @@ if [ -n "${WHTLST_IPS}" ]; then
         # block everyone else
         WHTLST_PORTS="${PORT_SSH} ${PORT_FTP} ${PORT_MYSQL}"
         for PORT in ${WHTLST_PORTS}; do
-            # use -A to make these least specific rules apply last
-            iptables -A INPUT -p tcp --dport ${PORT} -j DROP
-            iptables -A OUTPUT -p tcp --sport ${PORT} -j DROP
+            # only if the port number is not empty and greater than zero
+            if [ -n "${PORT}" ] && [ "${PORT}" -gt 0 ]; then
+                # use -A to make these least specific rules apply last
+                iptables -A INPUT -p tcp --dport ${PORT} -j DROP
+                iptables -A OUTPUT -p tcp --sport ${PORT} -j DROP
+            fi
         done
     fi
 fi
