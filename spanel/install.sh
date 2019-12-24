@@ -740,17 +740,9 @@ fi;
 
 # configure iptables with whitelisted IP addresses, if any
 if [ -n "${WHTLST_IPS}" ]; then
-    WHTLST_PORTS="${PORT_SSH} ${PORT_FTP} ${PORT_MYSQL}"
-    for WL_PORT in ${WHTLST_PORTS}; do
-        for WL_IP in ${WHTLST_IPS}; do
-            iptables -A INPUT -p tcp --dport ${WL_PORT} -s ${WL_IP} -j ACCEPT
-            iptables -A OUTPUT -p tcp --sport ${WL_PORT} -d ${WL_IP} -j ACCEPT
-        done
-        iptables -A INPUT -p tcp --dport ${WL_PORT} -j DROP
-        iptables -A OUTPUT -p tcp --sport ${WL_PORT} -j DROP
-    done
+    sh ${HOSTMANAGER_PATH} trust "${WHTLST_IPS}"
 fi
-iptables-save > /etc/iptables.conf
+# set the iptables rules to be restored on boot
 cat > /etc/network/if-up.d/iptables << EOF
 #!/bin/sh
 iptables-restore < /etc/iptables.conf

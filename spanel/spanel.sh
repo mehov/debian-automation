@@ -449,6 +449,50 @@ BHEOF
 
 }
 
+# this whitelists/removes the passed (space-separated) IPs with iptables
+manage_trusted_ips() {
+    if [ -z "${1}" ]; then
+        echo "The list of IPs is empty. Please provide them space-separated."
+        exit 1;
+    fi
+    WHTLST_IPS="${1}"
+    # collect the ports from the after-install config
+    CONF_PATH="/root/.bonjour.ini"
+    SSH_PORT=$(cfget -qC "${CONF_PATH}" "SSH_PORT")
+    FTP_PORT=$(cfget -qC "${CONF_PATH}" "FTP_PORT")
+    MYSQL_PORT=$(cfget -qC "${CONF_PATH}" "MYSQL_PORT")
+    if [ -z "${SSH_PORT}" ] && [ -z "${FTP_PORT}" ] && [ -z "${MYSQL_PORT}" ]; then
+        echo "No ports to secure found in ${CONF_PATH}."
+        exit 1;
+    fi
+    # make a space-separated list of ports to loop through
+    WHTLST_PORTS="${SSH_PORT} ${FTP_PORT} ${MYSQL_PORT}"
+    # pick variables depending on the requested action
+    case "${2}" in
+        "add")
+            MSG_VERB="Trusting"
+            CMD="A"
+            ;;
+        "remove")
+            MSG_VERB="Distrusting"
+            CMD="D"
+            ;;
+    esac
+    # output a confirmation message
+    echo "${MSG_VERB} '${WHTLST_IPS}' with port(s) '${WHTLST_PORTS}'"
+    # configure iptables
+    for PORT in ${WHTLST_PORTS}; do
+        for IP in ${WHTLST_IPS}; do
+            iptables -${CMD} INPUT -p tcp --dport ${PORT} -s ${IP} -j ACCEPT
+            iptables -${CMD} OUTPUT -p tcp --sport ${PORT} -d ${IP} -j ACCEPT
+        done
+        iptables -${CMD} INPUT -p tcp --dport ${PORT} -j DROP
+        iptables -${CMD} OUTPUT -p tcp --sport ${PORT} -j DROP
+    done
+    # back up iptables (minus the fail2ban rules)
+    iptables-save|grep -vP '^(?:(-A f2b-|:f2b-)|-A INPUT\b.* -j f2b-)'>/etc/iptables.conf
+}
+
 echo "ACTION: ${1}"
 ### What to do?
 case "${1}" in
@@ -473,6 +517,12 @@ case "${1}" in
         ;;
     "writable")
         permit_folder_writing "${2}"
+        ;;
+    "trust")
+        manage_trusted_ips "${2}" "add"
+        ;;
+    "distrust")
+        manage_trusted_ips "${2}" "remove"
         ;;
     *)
         echo "**** USAGE:"
