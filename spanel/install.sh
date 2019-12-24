@@ -741,11 +741,12 @@ fi;
 # configure iptables with whitelisted IP addresses, if any
 if [ -n "${WHTLST_IPS}" ]; then
     # and if at least one port is configured
-    if [ -n "${SSH_PORT}" ] || [ -n "${FTP_PORT}" ] || [ -n "${MYSQL_PORT}" ]; then
+    if [ -n "${PORT_SSH}" ] || [ -n "${PORT_FTP}" ] || [ -n "${PORT_MYSQL}" ]; then
         # trust the provided IPs
         sh ${HOSTMANAGER_PATH} trust "${WHTLST_IPS}"
         # block everyone else
-        for PORT in "${SSH_PORT} ${FTP_PORT} ${MYSQL_PORT}"; do
+        WHTLST_PORTS="${PORT_SSH} ${PORT_FTP} ${PORT_MYSQL}"
+        for PORT in ${WHTLST_PORTS}; do
             # use -A to make these least specific rules apply last
             iptables -A INPUT -p tcp --dport ${PORT} -j DROP
             iptables -A OUTPUT -p tcp --sport ${PORT} -j DROP
