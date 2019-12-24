@@ -740,7 +740,17 @@ fi;
 
 # configure iptables with whitelisted IP addresses, if any
 if [ -n "${WHTLST_IPS}" ]; then
-    sh ${HOSTMANAGER_PATH} trust "${WHTLST_IPS}"
+    # and if at least one port is configured
+    if [ -n "${SSH_PORT}" ] || [ -n "${FTP_PORT}" ] || [ -n "${MYSQL_PORT}" ]; then
+        # trust the provided IPs
+        sh ${HOSTMANAGER_PATH} trust "${WHTLST_IPS}"
+        # block everyone else
+        for PORT in "${SSH_PORT} ${FTP_PORT} ${MYSQL_PORT}"; do
+            # use -A to make these least specific rules apply last
+            iptables -A INPUT -p tcp --dport ${PORT} -j DROP
+            iptables -A OUTPUT -p tcp --sport ${PORT} -j DROP
+        done
+    fi
 fi
 # set the iptables rules to be restored on boot
 cat > /etc/network/if-up.d/iptables << EOF

@@ -471,7 +471,7 @@ manage_trusted_ips() {
     case "${2}" in
         "add")
             MSG_VERB="Trusting"
-            CMD="A"
+            CMD="I" # use -I to make these rules apply first in the chain
             ;;
         "remove")
             MSG_VERB="Distrusting"
@@ -486,8 +486,6 @@ manage_trusted_ips() {
             iptables -${CMD} INPUT -p tcp --dport ${PORT} -s ${IP} -j ACCEPT
             iptables -${CMD} OUTPUT -p tcp --sport ${PORT} -d ${IP} -j ACCEPT
         done
-        iptables -${CMD} INPUT -p tcp --dport ${PORT} -j DROP
-        iptables -${CMD} OUTPUT -p tcp --sport ${PORT} -j DROP
     done
     # back up iptables (minus the fail2ban rules)
     iptables-save|grep -vP '^(?:(-A f2b-|:f2b-)|-A INPUT\b.* -j f2b-)'>/etc/iptables.conf
