@@ -175,6 +175,7 @@ install() {
     if [ ! "$PORT_HTTP" = "0" ] && [ ! -d $WWW_ROOT ]; then
         mkdir $WWW_ROOT
     fi
+    chgrp -R www-data "${WWW_ROOT}"
 
     if [ ! "$PORT_FTP" = "0" ]; then
         wdpasswordg=`random_string -l 16`
@@ -191,7 +192,7 @@ install() {
         else
             #echo -e "/bin/false\n" >> /etc/shells
             useradd -d "$WWW_ROOT" -p $cppassword -g www-data -s /bin/sh -M $FTP_USER
-            chown $FTP_USER:www-data $WWW_ROOT
+            chown $FTP_USER $WWW_ROOT
         fi
         report_append "FTP_PORT" $PORT_FTP
         report_append "FTP_USER" $FTP_USER
@@ -659,7 +660,7 @@ if [ "${noroot_Yn}" = "y" ]; then
     useradd -s /bin/bash -md "${DIR_HOME}" -g sudo $SSH_USER
     usermod -a -G www-data ${SSH_USER}
     if [ -d "${WWW_ROOT}" ]; then
-        chown -R ${SSH_USER}:www-data "${WWW_ROOT}"
+        chown -R ${SSH_USER} "${WWW_ROOT}"
     fi
 else
     DIR_HOME="/root"
