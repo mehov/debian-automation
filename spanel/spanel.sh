@@ -110,7 +110,7 @@ EOF
 if [ ! -z "${2}" ]; then
     cat >> "${sites_available}/${conf_file_name}" << EOF
     server {
-        listen 443 ssl;
+        listen 443 ssl http2;
         server_name $2;
         ssl_certificate /etc/letsencrypt/live/$1/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
@@ -131,7 +131,7 @@ EOF
 fi
 cat >> "${sites_available}/${conf_file_name}" << EOF
     server {
-        listen 443 ssl;
+        listen 443 ssl http2;
         server_name $1;
         access_log /var/log/nginx/$1.access.log;
         error_log /var/log/nginx/$1.error.log;
