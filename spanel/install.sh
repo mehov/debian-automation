@@ -530,6 +530,7 @@ fi
 
 if [ ! "${PHP_VER}" = "0" ]; then
     curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
+    chmod +x "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
     # CONFIGURING PHP-FPM
     # find www pool config path, regardless of php-fpm version
