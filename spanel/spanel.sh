@@ -159,7 +159,14 @@ add() {
     if [ "${WWW_Yn}" = "" ] || [ "${WWW_Yn}" = "Y" ] || [ "${WWW_Yn}" = "y" ]; then
         aliases="www.$1"
     fi
-    read -p "Install LetsEncrypt SSL? [Y/n]: " SSL_Yn
+    echo ""
+    printf "You can get a free SSL/TLS certificate from Let's Encrypt. "
+    printf "Warning: your domain will be listed in public "
+    printf "certificate transparency logs, such as: \n"
+    echo "- https://transparencyreport.google.com/https/certificates"
+    echo "- https://crt.sh"
+    echo ""
+    read -p "Use Let's Encrypt? [Y/n]: " SSL_Yn
     CERTBOT_PATH_OPT=""
     if [ "${SSL_Yn}" = "" ] || [ "${SSL_Yn}" = "Y" ] || [ "${SSL_Yn}" = "y" ]; then
         CERTBOT_PATH_OPT="${CERTBOT_PATH}"
