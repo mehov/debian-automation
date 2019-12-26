@@ -112,7 +112,6 @@ if [ ! -z "${2}" ]; then
     server {
         listen 443 ssl;
         server_name $2;
-        ssl on;
         ssl_certificate /etc/letsencrypt/live/$1/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
         ssl_dhparam /etc/nginx/dhparam.pem;
@@ -139,7 +138,6 @@ cat >> "${sites_available}/${conf_file_name}" << EOF
         root $3;
         include "$4/.ngaccess";
         include snippets/vhost-common.conf;
-        ssl on;
         ssl_certificate /etc/letsencrypt/live/$1/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
         ssl_dhparam /etc/nginx/dhparam.pem;
