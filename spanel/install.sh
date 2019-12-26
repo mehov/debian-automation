@@ -384,10 +384,6 @@ http {
     server {
         server_name _;
         listen 80 default_server;
-        #todo: add https support
-        #listen 443 default_server;
-        #ssl_certificate /etc/nginx/00-default.crt;
-        #ssl_certificate_key /etc/nginx/00-default.key;
         return 444;
     }
     gzip on;
