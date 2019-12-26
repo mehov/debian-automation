@@ -256,7 +256,6 @@ add() {
     echo -n "Web root... "
     if ! [ -d $site_dir ]; then
         mkdir $site_dir
-        chown $ftp_user:www-data $site_dir
     fi
     if ! [ -d $site_dir ]; then
         echo "ERROR: "$site_dir" could not be created."
@@ -265,7 +264,6 @@ add() {
         if [ "$create_public_dir" = "y" ] || [ "$create_public_dir" = "Y" ];then
             public_dir=$site_dir"/"$public_dir_name_default
             mkdir $public_dir
-            chown $ftp_user:www-data $public_dir
         else
             public_dir=$site_dir
         fi
@@ -312,7 +310,6 @@ try_files \$uri \$uri/ /index.php?\$args;
             fi
         fi
     fi
-    chown -R ${website_user}:www-data ${site_dir}
 }
 remove_nginx_host() {
     # $1=hostname;
