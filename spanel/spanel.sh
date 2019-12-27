@@ -524,6 +524,9 @@ case "${1}" in
     "distrust")
         manage_trusted_ips "${2}" "remove"
         ;;
+    "update")
+        wget -O ${0} https://raw.githubusercontent.com/mehov/debian-automation/master/spanel/spanel.sh
+        ;;
     *)
         echo "**** USAGE:"
         echo "spanel [add|remove] example.com"
