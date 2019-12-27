@@ -572,11 +572,9 @@ if [ ! "$PORT_MYSQL" = "0" ]; then
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_REMO_USER}'@'%' WITH GRANT OPTION;"
 fi
 
-if [ ! "$PORT_HTTP" = "0" ]; then
-    wget -O ${HOSTMANAGER_PATH} https://raw.githubusercontent.com/mehov/debian-automation/master/spanel/spanel.sh 
-    chmod +x ${HOSTMANAGER_PATH}
-    echo "alias spanel='sh ${HOSTMANAGER_PATH}'" >> /etc/bash.bashrc
-fi
+wget -O ${HOSTMANAGER_PATH} https://raw.githubusercontent.com/mehov/debian-automation/master/spanel/spanel.sh
+chmod +x ${HOSTMANAGER_PATH}
+echo "alias spanel='sh ${HOSTMANAGER_PATH}'" >> /etc/bash.bashrc
 
 if [ ! "$PORT_FTP" = "0" ]; then
     sed -i "s/\t21\/tcp/\t$PORT_FTP\/tcp/g" /etc/services
