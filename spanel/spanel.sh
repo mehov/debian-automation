@@ -409,7 +409,10 @@ permit_folder_writing() {
     fi
     # set the writing permisions
     chgrp -R www-data "${DIR}"
-    chmod g+ws "${DIR}"
+    chmod g+ws "${DIR}" # chmod the folder and newly created items
+    if [ "y" != "${RM_Yn}" ]; then
+        find "${DIR}" -type d -exec chmod g+wx {} \; # chmod the subfolders
+    fi
     # abort if no HTTP or PHP blocking is requested
     if [ "y" != "${BH_Yn}" ] && [ "y" != "${BP_Yn}" ]; then
         exit 0
