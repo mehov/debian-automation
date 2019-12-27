@@ -554,6 +554,10 @@ if [ ! "${PHP_VER}" = "0" ]; then
     echo "Setting pm.max_children to ${PHP_CHLDN}"
     # set max_children
     sed -i "s/^;* *pm\.max_children *= *[^ ]*/pm.max_children = ${PHP_CHLDN}/" ${PHP_WPCNF}
+    # error handling
+    sed -i "s/^;* *php_flag\[display_errors\] *= *[^ ]*/php_flag[display_errors] = off/" ${PHP_WPCNF}
+    sed -i "s/^;* *php_admin_flag\[log_errors\] *= *[^ ]*/php_admin_flag[log_errors] = on/" ${PHP_WPCNF}
+    sed -i "s@^;* *php_admin_value\[error_log\] *= *[^ ]*@php_admin_value[error_log] = /var/log/php-fpm.log@" ${PHP_WPCNF}
 fi
 
 if [ ! "$PORT_MYSQL" = "0" ]; then
