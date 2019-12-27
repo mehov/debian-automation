@@ -175,8 +175,10 @@ install() {
     if [ ! "$PORT_HTTP" = "0" ] && [ ! -d $WWW_ROOT ]; then
         mkdir $WWW_ROOT
     fi
-    chgrp -R www-data "${WWW_ROOT}"
-    chmod g+s "${WWW_ROOT}"
+    if [ -d "${WWW_ROOT}" ]; then
+        chgrp -R www-data "${WWW_ROOT}"
+        chmod g+s "${WWW_ROOT}"
+    fi
 
     if [ ! "$PORT_FTP" = "0" ]; then
         wdpasswordg=`random_string -l 16`
