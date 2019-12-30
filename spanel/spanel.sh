@@ -97,6 +97,10 @@ EOF
         printf " - webroot: ${LETSENCRYPT_ROOT}\n"
         printf " - domains: ${domains}\n"
         $5 certonly --non-interactive --agree-tos --email "${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "${domains}"
+        if [ ! -r "/etc/letsencrypt/live/$1/fullchain.pem" ]; then
+            echo "Can't find the certificate file. Aborting."
+            exit 1
+        fi
         # cut -3 lines from the end of file (.ngaccess, vhost-common.conf, bracket)
         # that way we can later append further configuration to this directive
         head -n -3 "${sites_available}/${conf_file_name}" > "${sites_available}/${conf_file_name}.tmp"
