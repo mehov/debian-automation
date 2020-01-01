@@ -214,7 +214,10 @@ add() {
     #read -p "Create \"public_html\" subdir (i.e. "$site_dir"/"$public_dir_name_default")? [y/N]: " create_public_dir
     create_public_dir="N"
 
-    if [ -z $3 ]; then
+    MYSQL_PORT=$(cfget -qC ~/.bonjour.ini "MYSQL_PORT")
+    if [ -z "${MYSQL_PORT}" ]; then
+        create_database="n"
+    elif [ -z $3 ]; then
         read -p "Create MySQL database? [Y/n]: " create_database
         if [ "$create_database" != "n" ] && [ "$create_database"!="N" ]; then
         read -p "Enter MySQL database name [$database_name_random]: " database_name
@@ -241,7 +244,12 @@ add() {
         fi
     fi
 
-    read -p "Create a separate FTP/UNIX user? [Y/n]: " create_user
+    FTP_PORT=$(cfget -qC ~/.bonjour.ini "FTP_PORT")
+    if [ -n "${FTP_PORT}" ]; then
+        read -p "Create a separate FTP/UNIX user? [Y/n]: " create_user
+    else
+        create_user="n"
+    fi
     if [ "${create_user}" != "n" ] && [ "${create_user}"!="N" ]; then
         secondlvldomain=`echo $1 | cut -d "." -f 1`
         website_user_default="www-usr-${secondlvldomain}"
