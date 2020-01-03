@@ -476,24 +476,24 @@ EOF
 # poor man's WAF
 map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     default 0;
-    "~127\.0\.0\.1" 1;
-    "~(\.\./)+" 1;
-    "~*(<|%3c)\?" 1;
-    "~*\?(>|%3e)" 1;
-    "~_(SERVER|GET|POST|FILES|REQUEST|SESSION|ENV|COOKIE)\[" 1;
-    "~*(\\x|%)(3c|3e|5c|22|27)+" 1;
-    "~*(un)?hex\(" 1;
-    "~*base64_(en|de)code" 1;
-    "~*file_(put|get)_contents" 1;
-    "~*call_user_func_array" 1;
-    "~*(mb_)?ereg_replace" 1;
-    "~*char([^a-zA-Z0-9]*)?(\(|%28)" 1;
-    "~*concat([^a-zA-Z0-9]*)?(\(|%28)" 1;
-    "~*eval([^a-zA-Z0-9]*)?(\(|%28)" 1;
-    "~*(union([^a-zA-Z0-9]*))?select([^a-zA-Z0-9]*)from" 1;
-    "~*union([^a-zA-Z0-9]*)select(([^a-zA-Z0-9]*)from)?" 1;
+    "~(?<susmatch>127\.0\.0\.1)" 1;
+    "~(?<susmatch>(\.\./)+)" 1;
+    "~*(?<susmatch>(<|%3c)\?)" 1;
+    "~*(?<susmatch>\?(>|%3e))" 1;
+    "~(?<susmatch>_(SERVER|GET|POST|FILES|REQUEST|SESSION|ENV|COOKIE)\[)" 1;
+    "~*(?<susmatch>(\\x|%)(3c|3e|5c|22|27)+)" 1;
+    "~*(?<susmatch>(un)?hex\()" 1;
+    "~*(?<susmatch>base64_(en|de)code)" 1;
+    "~*(?<susmatch>file_(put|get)_contents)" 1;
+    "~*(?<susmatch>call_user_func_array)" 1;
+    "~*(?<susmatch>(mb_)?ereg_replace)" 1;
+    "~*(?<susmatch>char([^a-zA-Z0-9]*)?(\(|%28))" 1;
+    "~*(?<susmatch>concat([^a-zA-Z0-9]*)?(\(|%28))" 1;
+    "~*(?<susmatch>eval([^a-zA-Z0-9]*)?(\(|%28))" 1;
+    "~*(?<susmatch>(union([^a-zA-Z0-9]*))?select([^a-zA-Z0-9]*)from)" 1;
+    "~*(?<susmatch>union([^a-zA-Z0-9]*)select(([^a-zA-Z0-9]*)from)?)" 1;
 }
-log_format suslog '$remote_addr - $remote_user $host [$time_local] '
+log_format suslog '$remote_addr /$susmatch/ - $remote_user $host [$time_local] '
     '"$request" $status $body_bytes_sent '
     '"$http_referer" "$http_user_agent"';
 EOF
