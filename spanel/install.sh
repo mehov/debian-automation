@@ -495,7 +495,7 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
 }
 log_format suslog '$remote_addr /$susmatch/ - $remote_user $host [$time_local] '
     '"$request" $status $body_bytes_sent '
-    '"$http_referer" "$http_user_agent"';
+    '"$http_referer" "$http_user_agent" "$http_cookie"';
 EOF
 
     # configure fail2ban for poor man's nginx waf
