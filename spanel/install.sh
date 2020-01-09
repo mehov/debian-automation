@@ -85,6 +85,10 @@ install() {
     report_append "WWW_ROOT" $WWW_ROOT
     report_append "CERTBOT_PATH" $CERTBOT_PATH
 
+    echo ""
+    echo "Receive security notifications and alerts (SSH, fail2ban)?"
+    read -p "Enter an e-mail address, or leave empty to skip: " ALERTEMAIL
+
     read -p "Install Nginx? [Y/n]: " NGINX_Yn
     if [ "${NGINX_Yn}" = "" ] ||  [ "${NGINX_Yn}" = "Y" ] || [ "${NGINX_Yn}" = "y" ]; then
         PORT_HTTP="80"
@@ -302,6 +306,8 @@ EOF
     do_install python3-gi # fix "Unable to monitor PrepareForShutdown() signal"
     do_install fail2ban
     do_install dnsutils
+    do_install whois
+    do_install nullmailer
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
@@ -346,6 +352,38 @@ banaction = iptables-multiport
 banaction_allports = iptables-allports
 ignoreip = ${WHTLST_IPS}
 EOF
+
+if [ -n "${ALERTEMAIL}" ]; then
+    report_append "ALERT_EMAIL" $ALERTEMAIL
+    # below is a way to avoid installing sendmail, exim, postfix, etc.
+    # nullmailer is lightweight, but relay only; lets relay right to target MX
+    # parse out recipient's email hostname
+    ALERTEMAILHOST=$(echo "${ALERTEMAIL}" | awk -F "@" '{print $2}')
+    # read it's MX address record
+    ALERTEMAILMX=$(dig +short "${ALERTEMAILHOST}" mx | sort -n | nawk '{print $2; exit}' | sed -e 's/\.$//')
+    # save the MX record to nullmailer's config
+    printf "${ALERTEMAILMX}" > /etc/nullmailer/remotes
+    # configure the SSH login notifications
+    ALERTSCRIPT="/home/login-notification.sh"
+    ALERTBIN=$(which sendmail)
+    cat > "${ALERTSCRIPT}" << EOFALERTSCRIPT
+#!/bin/sh
+
+if [ "\${PAM_TYPE}" != "close_session" ]; then
+    ALERT_DATE=\$(LC_ALL=C date +"%a, %d %h %Y %T %z")
+    ALERT_SUBJECT="SSH Login Alert: \${PAM_USER}@\${PAM_RHOST} to \$(hostname)"
+    printf %b "Subject: \${ALERT_SUBJECT}\n\$(env)\n\${ALERT_DATE}" | ${ALERTBIN} "${ALERTEMAIL}"
+fi
+EOFALERTSCRIPT
+    chown ${SSH_USER} "${ALERTSCRIPT}"
+    chmod -w+x "${ALERTSCRIPT}"
+    echo "session optional pam_exec.so seteuid $ALERTSCRIPT" >> /etc/pam.d/sshd
+    sed -i "s/^#* *UsePAM *[^ ]*/UsePAM yes/" /etc/ssh/sshd_config
+    # enable fail2ban email notifications
+    echo "action = %(action_mwl)s" >> /etc/fail2ban/jail.local
+    # configure fail2ban to notify the provided e-mail
+    sed -i "s/^#* *destemail *= *[^ ]*/destemail = ${ALERTEMAIL}/" /etc/fail2ban/jail.conf
+fi
 
 # nginx configuration
 CPU_CORES_CNT=`nproc --all`
