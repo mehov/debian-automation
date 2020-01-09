@@ -301,6 +301,7 @@ EOF
     dpkg-reconfigure -f noninteractive unattended-upgrades
     do_install python3-gi # fix "Unable to monitor PrepareForShutdown() signal"
     do_install fail2ban
+    do_install dnsutils
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
