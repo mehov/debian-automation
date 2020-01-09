@@ -262,9 +262,9 @@ install() {
     fi
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
-    cat >> /root/.bash_profile << EOF
+    cat >> /root/.bash_profile << 'EOF'
 alias grep="grep --color=auto"
-# http://superuser.com/a/664061/111289
+# https://superuser.com/questions/137438/664061#664061
 export HISTFILESIZE=
 export HISTSIZE=
 export HISTTIMEFORMAT="[%F %T] "
