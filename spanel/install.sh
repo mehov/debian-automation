@@ -382,7 +382,7 @@ EOFALERTSCRIPT
     # enable fail2ban email notifications
     echo "action = %(action_mwl)s" >> /etc/fail2ban/jail.local
     # configure fail2ban to notify the provided e-mail
-    sed -i "s/^#* *destemail *= *[^ ]*/destemail = ${ALERTEMAIL}/" /etc/fail2ban/jail.conf
+    sed -i "s/^#* *destemail *= *[^$]*/destemail = ${ALERTEMAIL}/" /etc/fail2ban/jail.conf
 fi
 
 # nginx configuration
