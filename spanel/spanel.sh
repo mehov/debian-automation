@@ -516,6 +516,36 @@ manage_trusted_ips() {
     done
     # back up iptables (minus the fail2ban rules)
     iptables-save|grep -vP '^(?:(-A f2b-|:f2b-)|-A INPUT\b.* -j f2b-)'>/etc/iptables.conf
+    # configure fail2ban's 'ignoreip'
+    F2BCONF="/etc/fail2ban/jail.local" # fail2ban configuration file path
+    # get currently ignored IPs
+    F2B_IPS=$(grep 'ignoreip' ${F2BCONF} | cut -d '=' -f 2)
+    # if we're adding more ignored IPs
+    if [ "add" = "${2}" ]; then
+        # simply concat for now; will remove duplicates (if any) below
+        F2B_IPS_NEW="${F2B_IPS} ${WHTLST_IPS}"
+    # otherwise, if we're removing currently ignored IPs
+    elif [ "remove" = "${2}" ]; then
+        F2B_IPS_NEW=""
+        # loop through each currently ignored IP
+        for F2B_IP in ${F2B_IPS}; do
+            # match it against the list of IPs to be removed from ignored
+            case "${WHTLST_IPS}" in
+                *${F2B_IP}*)
+                    # if there's a match, do not include into the updated list
+                    ;;
+                *)
+                    # otherwise, include into the updated list
+                    F2B_IPS_NEW="${F2B_IPS_NEW} ${F2B_IP}"
+                    ;;
+            esac
+        done
+    fi
+    # remove duplicate entries; remove extra spaces
+    F2B_IPS_NEW=$(echo "${F2B_IPS_NEW}" | tr ' ' '\n' | sort -u | xargs)
+    # update fail2ban configuration
+    sed -i "s/^#* *ignoreip *= *[^$]*/ignoreip = ${F2B_IPS_NEW}/" ${F2BCONF}
+    echo "Fail2Ban set to ignore '${F2B_IPS_NEW}'"
 }
 
 echo "ACTION: ${1}"
