@@ -392,25 +392,25 @@ certbot_update_all() {
     ${CERTBOT_PATH} renew --webroot -w "${LETSENCRYPT_ROOT}" --post-hook "service nginx reload"
 }
 
-# Receive a folder path as an argument, make it writable to the web server
-# Optionally block HTTP access to that folder, or block PHP execution
-permit_folder_writing() {
+# Receive a path as an argument, make it writable to the web server
+# Optionally block HTTP access to that item and block PHP execution
+permit_writing() {
     # remove the trailing slash, if any
     ROOT=${www_root%/}
-    DIR=${1%/}
-    # validate the folder is inside web root
-    case $DIR in
+    ITEMPATH=${1%/}
+    # validate the item is inside the web root
+    case ${ITEMPATH} in
         "${ROOT}"*)
             ;;
         *)
-            echo "A writable directory has to be inside the web root"
+            echo "A writable file or folder has to be inside the web root"
             exit 1
             ;;
     esac
-    # Confirm the folder path
-    echo "Setting ${DIR} to be writable by the web server."
+    # Confirm the path
+    echo "Setting ${ITEMPATH} to be writable by the web server."
     # Collect input
-    read -p "Empty the folder? [Y/n]: " RM_Yn
+    read -p "Clear the contents? [Y/n]: " RM_Yn
     if [ "${RM_Yn}" = "" ] || [ "${RM_Yn}" = "Y" ]; then
         RM_Yn="y"
     fi
@@ -418,8 +418,8 @@ permit_folder_writing() {
     if [ "${BH_Yn}" = "" ] || [ "${BH_Yn}" = "Y" ]; then
         BH_Yn="y"
     fi
-    if [ "y" != "${BH_Yn}" ]; then
-        echo "Leaving folder both writable and accessible may let attackers upload, access and execute malicious scripts."
+    if [ -d "${ITEMPATH}" ] && [ "y" != "${BH_Yn}" ]; then
+        echo "Leaving a folder both writable and accessible may let attackers upload, access and execute malicious scripts inside it."
         read -p "Block PHP execution? (Highly recommended.) [Y/n]: " BP_Yn
         if [ "${BP_Yn}" = "" ] || [ "${BP_Yn}" = "Y" ]; then
             BP_Yn="y"
@@ -427,20 +427,25 @@ permit_folder_writing() {
     fi
     # clean up, if requested
     if [ "y" = "${RM_Yn}" ]; then
-        rm -rf "${DIR}"/*
+        if [ -d "${ITEMPATH}" ]; then
+            rm -rf "${ITEMPATH}"/*
+        elif [ -f "${ITEMPATH}" ]; then
+            echo "" > "${ITEMPATH}"
+        fi
     fi
     # set the writing permisions
-    chgrp -R www-data "${DIR}"
-    chmod g+ws "${DIR}" # chmod the folder and newly created items
-    if [ "y" != "${RM_Yn}" ]; then
-        find "${DIR}" -type d -exec chmod g+x {} \; # chmod the subfolders
+    chgrp -R www-data "${ITEMPATH}"
+    chmod g+ws "${ITEMPATH}" # chmod the folder and newly created items
+    if [ -d "${ITEMPATH}" ] && [ "y" != "${RM_Yn}" ]; then
+        # find and chmod the subfolders, if any
+        find "${ITEMPATH}" -type d -exec chmod g+x {} \;
     fi
     # abort if no HTTP or PHP blocking is requested
     if [ "y" != "${BH_Yn}" ] && [ "y" != "${BP_Yn}" ]; then
         exit 0
     fi
     # traverse the tree looking for .ngaccess
-    TRY_PATH="${DIR}" # start with the given path
+    TRY_PATH="${ITEMPATH}" # start with the given path
     # until we hit the web root
     NGACCESS=""
     while [ "${TRY_PATH}" != "${ROOT}" ]; do
@@ -454,17 +459,17 @@ permit_folder_writing() {
     done
     # if the file was found
     if [ -e "${NGACCESS}" ]; then
-        DIR_WEB=$(echo "${DIR}" | sed -e "s@${TRY_PATH}@@g")
+        ITEMPATH_WEB=$(echo "${ITEMPATH}" | sed -e "s@${TRY_PATH}@@g")
         if [ "y" = "${BH_Yn}" ]; then
 cat >> "${NGACCESS}" << BHEOF
-location ~ ${DIR_WEB} {
+location ~ ${ITEMPATH_WEB} {
     return 404;
 }
 BHEOF
         fi
         if [ "y" = "${BP_Yn}" ]; then
 cat >> "${NGACCESS}" << BHEOF
-location ~* ${DIR_WEB}/.*\.php {
+location ~* ${ITEMPATH_WEB}/.*\.php {
     return 404;
 }
 BHEOF
@@ -571,7 +576,7 @@ case "${1}" in
         certbot_update_all
         ;;
     "writable")
-        permit_folder_writing "${2}"
+        permit_writing "${2}"
         ;;
     "trust")
         manage_trusted_ips "${2}" "add"
