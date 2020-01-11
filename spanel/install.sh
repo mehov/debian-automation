@@ -581,6 +581,10 @@ if [ ! "${PHP_VER}" = "0" ]; then
     PHP_FPM_INI=$(find /etc/php  -path "*/fpm/*" -type f -name "php.ini")
     # make sure opcache is enabled
     sed -i "s/^;* *opcache\.enable *= *[^$]*/opcache.enable=1/" ${PHP_FPM_INI}
+    # force checking file readability on each access to cached file
+    sed -i "s/^;* *opcache\.validate_permission *= *[^$]*/opcache.validate_permission=1/" ${PHP_FPM_INI}
+    # validate root path of the file, prevent access in chrooted environments
+    sed -i "s/^;* *opcache\.validate_root *= *[^$]*/opcache.validate_root=1/" ${PHP_FPM_INI}
     # find www pool config path, regardless of php-fpm version
     PHP_WPCNF=$(find /etc/php  -path "*/fpm/pool.d/*" -type f -name "www.conf")
     # switch to static 
