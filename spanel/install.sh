@@ -462,9 +462,30 @@ include fastcgi_params;
 EOF
     fi
 
-    PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
-    cat > /etc/nginx/snippets/vhost-common.conf << EOF
+    cat > /etc/nginx/snippets/vhost-common.conf << 'EOF'
 index index.php index.html index.htm;
+location = /favicon.ico {
+    log_not_found off;
+    access_log off;
+}
+location = /robots.txt {
+    allow all;
+    log_not_found off;
+    access_log off;
+}
+location ~* \.(ini)$ {
+    return 404;
+}
+location ~ /\.well-known { 
+    allow all;
+}
+location ~ /\. {
+    deny all;
+}
+EOF
+    if [ ! "${PHP_VER}" = "0" ]; then
+        PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
+        cat >> /etc/nginx/snippets/vhost-common.conf << EOF
 location ~ \.php {
     if (\$suspicious = 1) {
         access_log /var/log/nginx/suspicious.log suslog;
@@ -475,24 +496,6 @@ location ~ \.php {
     keepalive_timeout 0;
     fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
     fastcgi_pass unix:${PHP_SOCK_PATH};
-}
-location = /favicon.ico {
-    log_not_found off;
-    access_log off;
-}
-location = /robots.txt {
-    allow all;
-    log_not_found off;
-    access_log off;
-}
-location ~* \.(ini)\$ {
-    return 404;
-}
-location ~ /\.well-known { 
-    allow all;
-}
-location ~ /\. {
-    deny all;
 }
 EOF
 
