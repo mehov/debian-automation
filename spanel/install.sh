@@ -577,6 +577,10 @@ if [ ! "${PHP_VER}" = "0" ]; then
     chmod +x "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
     # CONFIGURING PHP-FPM
+    # find php.ini path, regardless of php-fpm version
+    PHP_FPM_INI=$(find /etc/php  -path "*/fpm/*" -type f -name "php.ini")
+    # make sure opcache is enabled
+    sed -i "s/^;* *opcache\.enable *= *[^$]*/opcache.enable=1/" ${PHP_FPM_INI}
     # find www pool config path, regardless of php-fpm version
     PHP_WPCNF=$(find /etc/php  -path "*/fpm/pool.d/*" -type f -name "www.conf")
     # switch to static 
