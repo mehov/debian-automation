@@ -343,6 +343,9 @@ EOF
     fi
     # set the timezone
     timedatectl set-timezone UTC
+    # disable the mouse input in vim visual mode
+    DEFAULTSVIM=$(find /usr -path "*/vim/*" -type f -name "defaults.vim")
+    sed -i "s/^\"* *set mouse[^$]*/set mouse-=a/" "${DEFAULTSVIM}"
 # initial fail2ban jail configuration
 cat > /etc/fail2ban/jail.local << EOF
 [DEFAULT]
