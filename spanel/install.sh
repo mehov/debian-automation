@@ -588,6 +588,8 @@ if [ ! "${PHP_VER}" = "0" ]; then
     sed -i "s/^;* *opcache\.validate_permission *= *[^$]*/opcache.validate_permission=1/" ${PHP_FPM_INI}
     # validate root path of the file, prevent access in chrooted environments
     sed -i "s/^;* *opcache\.validate_root *= *[^$]*/opcache.validate_root=1/" ${PHP_FPM_INI}
+    # Use opcache.restrict_api to disable OPcache API access for all PHP scripts
+    sed -i "s/^;* *opcache\.restrict_api *= *[^$]*/opcache.restrict_api=1/" ${PHP_FPM_INI}
     # find www pool config path, regardless of php-fpm version
     PHP_WPCNF=$(find /etc/php  -path "*/fpm/pool.d/*" -type f -name "www.conf")
     # switch to static 
