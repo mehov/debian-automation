@@ -308,6 +308,8 @@ EOF
     do_install dnsutils
     do_install whois
     do_install nullmailer
+    do_install rush
+    do_install rsync
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
@@ -346,7 +348,23 @@ EOF
     # disable the mouse input in vim visual mode
     DEFAULTSVIM=$(find /usr -path "*/vim/*" -type f -name "defaults.vim")
     sed -i "s/^\"* *set mouse[^$]*/set mouse-=a/" "${DEFAULTSVIM}"
-# initial fail2ban jail configuration
+
+    # configure rush to only allow rsync restricted to WWW_ROOT
+    cat > /etc/rush.rc << EORUSHRC
+debug 1
+rule allow-rsync
+  command ^rsync --server [^/]* ${WWW_ROOT}\$
+  set[0] /usr/bin/rsync
+  transform[\$] s|[\\\.]{2,}||g
+  transform[\$] s|[%]+||g
+  chdir ${WWW_ROOT}
+rule trap
+  command ^.*
+  # keep the trailing space below
+  exit 
+EORUSHRC
+
+    # initial fail2ban jail configuration
 cat > /etc/fail2ban/jail.local << EOF
 [DEFAULT]
 findtime = 1w

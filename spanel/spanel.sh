@@ -553,6 +553,36 @@ manage_trusted_ips() {
     echo "Fail2Ban set to ignore '${F2B_IPS_NEW}'"
 }
 
+backup_user_add() {
+    # generate the backup user account name
+    BACKUSER_DEFAULT="backup$(date -u "+%N" | cut -c 1,2,4,8)"
+    # prompt for the backup user account name
+    read -p "Backup user account name [${BACKUSER_DEFAULT}]: " BACKUSER
+    if [ -z "${BACKUSER}" ]; then
+        BACKUSER=${BACKUSER_DEFAULT}
+    fi
+    # store their home folder in a variable
+    BACKHOME="/home/${BACKUSER}"
+    # get the gnu rush path
+    PATHRUSH=$(which rush)
+    # add the backup user
+    echo "Creating user ${BACKUSER}"
+    useradd -md "${BACKHOME}" -g www-data -s ${PATHRUSH} ${BACKUSER}
+    # allow the user with ssh - but only if AllowUsers is actually being used
+    sed -i "s/^ *AllowUsers [^$]*/& ${BACKUSER}/" /etc/ssh/sshd_config
+    # create their .ssh folder
+    mkdir -p "${BACKHOME}/.ssh"
+    # prompt for the authorized key
+    read -p "A public key from the backup server: " BACKKEY
+    # save the authorized key
+    echo ${BACKKEY} > "${BACKHOME}/.ssh/authorized_keys"
+    # restart sshd
+    service sshd restart
+    # trust backup server IP address
+    read -p "Backup server IP address: " BACKADDR
+    manage_trusted_ips "${BACKADDR}" "add"
+}
+
 echo "ACTION: ${1}"
 ### What to do?
 case "${1}" in
@@ -583,6 +613,9 @@ case "${1}" in
         ;;
     "distrust")
         manage_trusted_ips "${2}" "remove"
+        ;;
+    "backup")
+        backup_user_${2}
         ;;
     "update")
         wget -O ${0} https://raw.githubusercontent.com/mehov/debian-automation/master/spanel/spanel.sh
