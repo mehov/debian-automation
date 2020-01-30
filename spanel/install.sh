@@ -47,6 +47,7 @@ do_install() {
     is_installed $1
     RES=$?
     if [ "0" = $RES ]; then
+        header "Installing ${1}"
         DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" $1
     fi
 }
@@ -65,6 +66,7 @@ do_uninstall() {
     is_installed $1
     RES=$?
     if [ "1" = $RES ]; then
+        header "Purging ${1}"
         service $1 stop
         apt-get purge -s -y $DEL
     fi
@@ -74,13 +76,18 @@ report_append()  {
     echo "$1=$2" >> ~/.bonjour.ini
 }
 
-
-
+HEADERS=0
+header() {
+    printf "\n\n"
+    echo "**** ${SESSION_ID}/${HEADERS} [$(date +%T.%N%z)] ${1}"
+    HEADERS=$((HEADERS+1))
+}
 
 
 
 
 install() {
+    SESSION_ID=$(random_string -l 4)
     # start the config
     report_append "WWW_ROOT" $WWW_ROOT
     report_append "CERTBOT_PATH" $CERTBOT_PATH
@@ -233,7 +240,7 @@ install() {
         echo "**** MySQL SKIPPED"
     fi
 
-    echo "**** All set. No further user input required."
+    header "All set. No further user input required."
 
     #build-essentials = c++
 
@@ -254,6 +261,7 @@ install() {
     do_install gnupg2
     do_install lsb-release
 
+    header "Update sources.list"
     debian_codename=$(lsb_release -sc)
     if [ -z "${debian_codename}" ]; then
         echo "Failed to get the Debian version codename using lsb_release"
@@ -280,6 +288,7 @@ export HISTFILE=~/.bash_eternal_history
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 EOF
 
+    header "Installing debian-keyring"
     apt-get update # has to be here, even if it fails
     apt-get install -y debian-keyring 
     apt-get install -y debian-archive-keyring
@@ -288,6 +297,7 @@ EOF
     apt-get -y upgrade
 
 
+    header "Installing core software"
     do_install build-essential
     #do_install gcc
     do_install coreutils
@@ -305,33 +315,37 @@ EOF
     do_install logrotate
     do_install ntp
     do_install tzdata
-    do_install unattended-upgrades
-    dpkg-reconfigure -f noninteractive unattended-upgrades
     do_install python3-gi # fix "Unable to monitor PrepareForShutdown() signal"
+    do_install git
     do_install fail2ban
     do_install dnsutils
     do_install whois
     do_install nullmailer
     do_install rush
     do_install rsync
+    header "Installing and configuring unattended-upgrades"
+    do_install unattended-upgrades
+    dpkg-reconfigure -f noninteractive unattended-upgrades
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
-    do_install git
     if [ ! "$PORT_HTTP" = "0" ]; then
+        header "Installing Nginx"
         do_install nginx
     fi
     if [ ! "$PORT_FTP" = "0" ]; then
+        header "Installing FTP (inetutils)"
         do_install inetutils-ftpd
     fi
     if [ ! "$PORT_MYSQL" = "0" ]; then
+        header "Installing MariaDB"
         do_install mariadb-server
         systemctl enable mariadb
         service mysql stop
     fi
 
     if [ ! "${PHP_VER}" = "0" ]; then
-        # installing PHP and it's modules
+        header "Installing PHP and it's modules"
         do_install php${PHP_VER}*-common
         do_install php${PHP_VER}*-cli
         do_install php${PHP_VER}*-fpm
@@ -347,6 +361,7 @@ EOF
         do_install php${PHP_VER}*-xml
         do_install php${PHP_VER}*-opcache
     fi
+    header "Configuring the software"
     # set the timezone
     timedatectl set-timezone UTC
     # disable the mouse input in vim visual mode
@@ -379,6 +394,7 @@ ignoreip = ${WHTLST_IPS}
 EOF
 
 if [ -n "${ALERTEMAIL}" ]; then
+    header "Setting up alerts"
     report_append "ALERT_EMAIL" $ALERTEMAIL
     # below is a way to avoid installing sendmail, exim, postfix, etc.
     # nullmailer is lightweight, but relay only; lets relay right to target MX
@@ -414,6 +430,7 @@ fi
 CPU_CORES_CNT=`nproc --all`
 ULIMIT=`ulimit -n`
 if [ ! "$PORT_HTTP" = "0" ]; then
+    header "Configuring Nginx"
     if [ ! -d "/etc/nginx/sites-enabled" ]; then
         mkdir "/etc/nginx/sites-enabled"
     fi
@@ -509,6 +526,7 @@ location ~ /\. {
 }
 EOF
     if [ ! "${PHP_VER}" = "0" ]; then
+        header "Configuring Nginx: PHP"
         PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
         cat >> /etc/nginx/snippets/vhost-common.conf << EOF
 location ~ \.php {
@@ -526,6 +544,7 @@ EOF
     fi
 
     # perform all letsencrypt validations in a separate directory
+    header "Configuring Nginx: Lets Encrypt"
     LETSENCRYPT_ROOT="/usr/share/nginx/letsencrypt"
     report_append "LETSENCRYPT_ROOT" ${LETSENCRYPT_ROOT}
     mkdir -p "${LETSENCRYPT_ROOT}"
@@ -540,6 +559,7 @@ EOF
     # generate the diffie-hellman parameters
     openssl dhparam -out /etc/nginx/dhparam.pem 4096
 
+    header "Configuring Nginx: WAF"
     cat > /etc/nginx/snippets/suspicious.conf << 'EOF'
 # poor man's WAF
 map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
@@ -599,6 +619,7 @@ service nginx start
 fi
 
 if [ ! "${PHP_VER}" = "0" ]; then
+    header "Configuring PHP"
     curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
     chmod +x "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
@@ -641,6 +662,7 @@ if [ ! "${PHP_VER}" = "0" ]; then
 fi
 
 if [ ! "$PORT_MYSQL" = "0" ]; then
+    header "Configuring MySQL"
     sed -i "s/^#port/port/g" /etc/mysql/mariadb.conf.d/50-server.cnf
     sed -i "s/= 3306/= ${PORT_MYSQL}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
     sed -i "s/= 127.0.0.1/= $(hostname -i)/g" /etc/mysql/mariadb.conf.d/50-server.cnf
@@ -650,11 +672,13 @@ if [ ! "$PORT_MYSQL" = "0" ]; then
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_REMO_USER}'@'%' WITH GRANT OPTION;"
 fi
 
+header "Downloading the host manager script (spanel)"
 wget -O ${HOSTMANAGER_PATH} https://raw.githubusercontent.com/mehov/debian-automation/master/spanel/spanel.sh
 chmod +x ${HOSTMANAGER_PATH}
 echo "alias spanel='sh ${HOSTMANAGER_PATH}'" >> /etc/bash.bashrc
 
 if [ ! "$PORT_FTP" = "0" ]; then
+    header "Configuring FTP"
     sed -i "s/\t21\/tcp/\t$PORT_FTP\/tcp/g" /etc/services
     #useradd ftpd
 cat > /etc/init.d/inetutils-ftpd << EOF
@@ -709,6 +733,7 @@ update-rc.d inetutils-ftpd defaults
 fi
 
 if [ "${LECertbot_Yn}" = "" ] ||  [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_Yn}" = "y" ]; then
+    header "Installing the Lets Encrypt certbot"
     # install certbot for letsencrypt
     # https://certbot.eff.org/all-instructions/#web-hosting-service-nginx
     wget -O ${CERTBOT_PATH} https://dl.eff.org/certbot-auto
@@ -718,7 +743,7 @@ if [ "${LECertbot_Yn}" = "" ] ||  [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_
     echo "0 4 1,15 * * root ${HOSTMANAGER_PATH} certupdate >> /var/log/certupdate.log 2>&1" > /etc/cron.d/certupdate
 fi
 
-echo "Updating SSH configuration"
+header "Configuring SSH"
 # stop accepting client environment variables
 sed -i "s/^AcceptEnv/#AcceptEnv/g" /etc/ssh/sshd_config
 # Update the SSH port
@@ -776,6 +801,7 @@ EOF
 ssh-keygen -A
 
 # configure fail2ban for sshd
+header "Configuring SSH fail2ban jail"
 SSH_MAXRETRY=4
 if [ "${nopass_Yn}" = "y" ]; then
     # lower the tolerance for failed attempts if no password is used
@@ -796,6 +822,7 @@ iptables -F
 
 # if SSH uses port other than 22, add a honeypot
 if [ ! "${PORT_SSH}" = "22" ]; then
+    header "Configuring SSH fail2ban honeypot"
     HP_PREF="sshd-honeypot"
     iptables -A INPUT -p tcp  --dport 22 -j LOG --log-prefix="${HP_PREF} "
     cat > "/etc/rsyslog.d/00-${HP_PREF}.conf" << EOF
@@ -823,6 +850,7 @@ fi;
 if [ -n "${WHTLST_IPS}" ]; then
     # and if at least one port is configured
     if [ -n "${PORT_SSH}" ] || [ -n "${PORT_FTP}" ] || [ -n "${PORT_MYSQL}" ]; then
+        header "Trusting whitelisted IP addresses"
         # trust the provided IPs
         sh ${HOSTMANAGER_PATH} trust "${WHTLST_IPS}"
         # block everyone else
@@ -841,6 +869,7 @@ if [ -n "${WHTLST_IPS}" ]; then
     fi
     iptables-save > /etc/iptables.conf
 fi
+header "Finishing up the iptables configuration"
 # set the iptables rules to be restored on boot
 cat > /etc/network/if-up.d/iptables << EOF
 #!/bin/sh
@@ -848,7 +877,9 @@ iptables-restore < /etc/iptables.conf
 EOF
 chmod +x /etc/network/if-up.d/iptables 
 
+header "Clean up"
 apt-get -y autoremove
+header "Self-destruct"
 rm $0
 
 echo "**** All done."
