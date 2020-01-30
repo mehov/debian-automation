@@ -519,6 +519,7 @@ location ~ \.php {
     fastcgi_pass unix:${PHP_SOCK_PATH};
 }
 EOF
+    fi
 
     # perform all letsencrypt validations in a separate directory
     LETSENCRYPT_ROOT="/usr/share/nginx/letsencrypt"
