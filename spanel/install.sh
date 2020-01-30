@@ -252,9 +252,13 @@ install() {
     do_install wget
     do_install gnupg
     do_install gnupg2
+    do_install lsb-release
 
-    debian_version=`cat /etc/debian_version | sed -r 's/\..*//'`
     debian_codename=$(lsb_release -sc)
+    if [ -z "${debian_codename}" ]; then
+        echo "Failed to get the Debian version codename using lsb_release"
+        exit 1
+    fi
     cat /dev/null > /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename} main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename}-backports main contrib non-free" >> /etc/apt/sources.list
