@@ -416,7 +416,6 @@ if [ "\${PAM_TYPE}" != "close_session" ]; then
     printf %b "Subject: \${ALERT_SUBJECT}\n\$(env)\n\${ALERT_DATE}" | ${ALERTBIN} "${ALERTEMAIL}"
 fi
 EOFALERTSCRIPT
-    chown ${SSH_USER} "${ALERTSCRIPT}"
     chmod -w+x "${ALERTSCRIPT}"
     echo "session optional pam_exec.so seteuid $ALERTSCRIPT" >> /etc/pam.d/sshd
     sed -i "s/^#* *UsePAM *[^ ]*/UsePAM yes/" /etc/ssh/sshd_config
