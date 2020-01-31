@@ -325,7 +325,9 @@ EOF
     do_install fail2ban
     do_install dnsutils
     do_install whois
-    do_install nullmailer
+    if [ -n "${ALERTEMAIL}" ]; then
+        do_install nullmailer
+    fi
     do_install rush
     do_install rsync
     header "Installing and configuring unattended-upgrades"
