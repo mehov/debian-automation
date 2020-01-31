@@ -260,6 +260,7 @@ install() {
     do_install gnupg
     do_install gnupg2
     do_install lsb-release
+    do_install dialog
 
     header "Update sources.list"
     debian_codename=$(lsb_release -sc)
@@ -293,7 +294,6 @@ EOF
     apt-get install -y debian-keyring 
     apt-get install -y debian-archive-keyring
     apt-get update
-    apt-get install -y dialog
     apt-get -y upgrade
 
 
