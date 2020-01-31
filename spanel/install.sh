@@ -240,10 +240,11 @@ install() {
         echo "**** MySQL SKIPPED"
     fi
 
-    header "All set. No further user input required."
+    header "Starting."
 
     #build-essentials = c++
 
+    header "Deleting pre-installed packages"
     do_uninstall exim4
     do_uninstall nginx 1
     do_uninstall apache2
@@ -255,6 +256,7 @@ install() {
     do_uninstall dovecot
     do_uninstall mysql
 
+    header "Installing requirements"
     do_install ca-certificates
     do_install wget
     do_install gnupg
@@ -262,7 +264,7 @@ install() {
     do_install lsb-release
     do_install dialog
 
-    header "Update sources.list"
+    header "Updating sources.list"
     debian_codename=$(lsb_release -sc)
     if [ -z "${debian_codename}" ]; then
         echo "Failed to get the Debian version codename using lsb_release"
@@ -273,10 +275,12 @@ install() {
     echo "deb http://httpredir.debian.org/debian ${debian_codename}-backports main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://security.debian.org/ ${debian_codename}/updates main contrib non-free" >> /etc/apt/sources.list
     if [ ! "$PORT_HTTP" = "0" ]; then
+        header "Adding Nginx repository to sources.list"
         echo "deb http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
         echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
         wget https://nginx.org/keys/nginx_signing.key -O - | apt-key add -
     fi
+    header "Adding pubkeys"
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
     cat >> /root/.bash_profile << 'EOF'
@@ -289,13 +293,14 @@ export HISTFILE=~/.bash_eternal_history
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 EOF
 
-    header "Installing debian-keyring"
+    header "Installing keyrings"
     apt-get update # has to be here, even if it fails
     do_install debian-keyring
     do_install debian-archive-keyring
     apt-get update
-    apt-get -y upgrade
 
+    header "Upgrading"
+    apt-get -y upgrade
 
     header "Installing core software"
     do_install build-essential
