@@ -33,7 +33,7 @@ ssh-keygen -q -t rsa -b 4096 -C "${VAR_USERNAME}" -N "" -f "${VAR_KEY_PATH}"
 chmod 700 "${VAR_LOCATION}/.ssh"
 chown -R "${VAR_USERNAME}":"${VAR_USERNAME}" "${VAR_LOCATION}"
 printf "\n\n"
-cat ${VAR_KEY_PATH}
+cat ${VAR_KEY_PATH}.pub
 printf "\n\n"
 
 # install the software
