@@ -32,7 +32,9 @@ VAR_KEY_PATH="${VAR_LOCATION}/.ssh/id_rsa"
 ssh-keygen -q -t rsa -b 4096 -C "${VAR_USERNAME}" -N "" -f "${VAR_KEY_PATH}"
 chmod 700 "${VAR_LOCATION}/.ssh"
 chown -R "${VAR_USERNAME}":"${VAR_USERNAME}" "${VAR_LOCATION}"
-ssh-copy-id -i ${VAR_KEY_PATH} ${VAR_REMOTE_USERNAME}@${VAR_REMOTE_SERVER}
+printf "\n\n"
+cat ${VAR_KEY_PATH}
+printf "\n\n"
 
 # install the software
 apt-get update
