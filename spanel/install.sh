@@ -367,6 +367,7 @@ EOF
         do_install php${PHP_VER}*-mbstring
         do_install php${PHP_VER}*-xml
         do_install php${PHP_VER}*-opcache
+        do_install php${PHP_VER}*-zip
     fi
     header "Configuring the software"
     # set the timezone
