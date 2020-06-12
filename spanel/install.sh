@@ -257,6 +257,7 @@ install() {
     do_uninstall mysql
 
     header "Installing requirements"
+    do_install apt-transport-https
     do_install ca-certificates
     do_install wget
     do_install gnupg
