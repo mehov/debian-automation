@@ -281,6 +281,11 @@ install() {
         echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
         wget https://nginx.org/keys/nginx_signing.key -O - | apt-key add -
     fi
+    debian_release=$(printf "%.0f\n" $(lsb_release -sr)) # truncate to major ver
+    if [ "${debian_release}" = "8" ]; then
+        wget -q https://packages.sury.org/php/apt.gpg -O- | apt-key add -
+        echo "deb https://packages.sury.org/php/ ${debian_codename} main" >> /etc/apt/sources.list
+    fi
     header "Adding pubkeys"
     for k in $(apt-get update 2>&1|grep -o NO_PUBKEY.*|sed 's/NO_PUBKEY //g');do echo "key: $k";gpg --recv-keys $k;gpg --recv-keys $k;gpg --armor --export $k|apt-key add -;done
 
