@@ -296,7 +296,6 @@ EOF
 
     header "Installing keyrings"
     apt-get update # has to be here, even if it fails
-    do_install debian-keyring
     do_install debian-archive-keyring
     apt-get update
 
