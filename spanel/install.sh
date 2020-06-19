@@ -319,6 +319,7 @@ EOF
     do_install systemd
     do_install curl
     do_install vim
+    do_install unzip
     do_install bc
     do_install cfget
     do_install easy-rsa
