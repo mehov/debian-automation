@@ -688,7 +688,7 @@ fi
 header "Downloading the host manager script (spanel)"
 wget -O ${HOSTMANAGER_PATH} https://raw.githubusercontent.com/mehov/debian-automation/master/spanel/spanel.sh
 chmod +x ${HOSTMANAGER_PATH}
-echo "alias spanel='sh ${HOSTMANAGER_PATH}'" >> /etc/bash.bashrc
+echo "alias spanel='bash ${HOSTMANAGER_PATH}'" >> /etc/bash.bashrc
 
 if [ ! "$PORT_FTP" = "0" ]; then
     header "Configuring FTP"
