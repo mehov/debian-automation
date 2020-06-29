@@ -623,7 +623,22 @@ case "${1}" in
         backup_user_${2}
         ;;
     "update")
-        wget -O ${0} https://raw.githubusercontent.com/mehov/debian-automation/master/spanel/spanel.sh
+        VAR_JSON="/tmp/spanel.json"
+        wget -nv -O "${VAR_JSON}" https://api.github.com/repos/mehov/debian-automation/contents/spanel/spanel.sh
+        VAR_DL=$(grep --color=never -Po '"download_url":.*?[^\\]",' "${VAR_JSON}" | cut -d '"' -f4)
+        VAR_TMP="${0}.tmp"
+        wget -nv -O "${VAR_TMP}" "${VAR_DL}"
+        VAR_LSHA=$(cat "${VAR_TMP}" | git hash-object --stdin)
+        VAR_RSHA=$(grep --color=never -Po '"sha":.*?[^\\]",' "${VAR_JSON}" | cut -d '"' -f4)
+        if [ "_${VAR_LSHA}" = "_${VAR_RSHA}" ]; then
+            cat "${VAR_TMP}" > "${0}"
+        else
+            printf "Checksum mismatch:\n"
+            printf "  ${VAR_LSHA} ${VAR_TMP}\n"
+            printf "  ${VAR_RSHA} ${VAR_DL}\n"
+        fi
+        # clean up
+        rm "${VAR_TMP}" "${VAR_JSON}"
         ;;
     *)
         echo "**** USAGE:"
