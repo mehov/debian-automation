@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ### Checking for user
 if [ "$(whoami)" != 'root' ]; then
