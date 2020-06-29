@@ -583,6 +583,11 @@ backup_user_add() {
     manage_trusted_ips "${BACKADDR}" "add"
 }
 
+# always make sure this script is executable (for e.g. cron)
+if [ ! -x "${0}" ]; then
+    chmod +x "${0}"
+fi
+
 echo "ACTION: ${1}"
 ### What to do?
 case "${1}" in
