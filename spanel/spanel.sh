@@ -57,20 +57,20 @@ create_nginx_host() {
     # $1=hostname; $2=aliases; $3=public_dir; $4=config_dir; $5=certbot_path_opt
     conf_file_name=`nginx_vhost_conf_name ${1}`
     if [ ! -z "${2}" ]; then
-    cat >> "${sites_available}/${conf_file_name}" << EOF
-    server {
-        listen 80;
-        server_name $2;
-        access_log /var/log/nginx/$1-aliases.access.log;
-        error_log /var/log/nginx/$1-aliases.error.log;
-        include snippets/vhost-letsencrypt.conf;
-        location / {
-            return 301 http://$1\$request_uri;
-        }
-    }
+cat >> "${sites_available}/${conf_file_name}" << EOF
+server {
+listen 80;
+server_name $2;
+access_log /var/log/nginx/$1-aliases.access.log;
+error_log /var/log/nginx/$1-aliases.error.log;
+include snippets/vhost-letsencrypt.conf;
+location / {
+    return 301 http://$1\$request_uri;
+}
+}
 EOF
-    fi
-    cat >> "${sites_available}/${conf_file_name}" << EOF
+fi
+cat >> "${sites_available}/${conf_file_name}" << EOF
     server {
         listen 80;
         server_name $1;
@@ -588,6 +588,59 @@ if [ ! -x "${0}" ]; then
     chmod +x "${0}"
 fi
 
+manage_http_basic_auth() {
+    # prepare the variables
+    WEBROOT=$(pwd)
+    WEBCONF=$(grep -FliR -m 1 --color=never "root ${WEBROOT};" ${sites_available})
+    HTTP_HTPA="${WEBCONF}.htpasswd"
+    HTTP_USER="${1}"
+    # if we're setting a password for the user
+    if [ "${2}" = "on" ]; then
+        # can't continue if the username is empty
+        if [ -z "${1}" ]; then
+            echo "Please provide a username"
+            exit 1;
+        fi
+        # read the password, or use the randomly generated one
+        HTTP_PASS_RAND=$(random_string -l 24)
+        read -p "HTTP Password for ${HTTP_USER} [${HTTP_PASS_RAND}]: " HTTP_PASS
+        if [ "_${HTTP_PASS}" = "_" ]; then
+            HTTP_PASS=${HTTP_PASS_RAND}
+        fi
+        # add the user entry if it doesn't exist yet
+        touch "${HTTP_HTPA}"
+        if ! grep -q "${HTTP_USER}:" "${HTTP_HTPA}"; then
+            printf "${HTTP_USER}:\n" >> ${HTTP_HTPA}
+        fi
+        # update the password
+        HTTP_HASH=$(openssl passwd -apr1 ${HTTP_PASS})
+        sed -i "s|${HTTP_USER}:[^ ]*|${HTTP_USER}:${HTTP_HASH}|" ${HTTP_HTPA}
+        # add auth_basic to nginx configuration, if not already present
+        if ! grep -q "auth_basic" "${WEBCONF}"; then
+            HTTP_AUTH="auth_basic \"Auth\";\nauth_basic_user_file ${HTTP_HTPA};"
+            sed -i "/^ *server {$/ a ${HTTP_AUTH}" ${WEBCONF}
+        fi
+    else
+        # if a specific user is requested, delete it from the passwords file
+        if [ "_${HTTP_USER}" != "_off" ]; then
+            echo "Deleting ${HTTP_USER} from ${HTTP_HTPA}."
+            sed -i "/^${HTTP_USER}:/d" ${HTTP_HTPA}
+        fi
+        # if the passwords file is now empty, or if disabling auth requested
+        if [ ! -s ${HTTP_HTPA} ] || [ "_${HTTP_USER}" = "_off" ]; then
+            # delete the passwords file if it exists
+            if [ -f "${HTTP_HTPA}" ]; then
+                echo "Deleting ${HTTP_HTPA}"
+                rm "${HTTP_HTPA}"
+            fi
+            # remove the auth_basic directives from the nginx config
+            echo "Deleting the auth_basic directives"
+            sed -i '/^auth_basic/d' ${WEBCONF}
+        fi
+    fi
+    service nginx restart
+}
+
 echo "ACTION: ${1}"
 ### What to do?
 case "${1}" in
@@ -639,6 +692,38 @@ case "${1}" in
         fi
         # clean up
         rm "${VAR_TMP}" "${VAR_JSON}"
+        ;;
+    "password")
+        # make sure a website to work with is selected
+        WEBROOT=$(pwd)
+        WEBCONF=$(grep -FliR -m 1 --color=never "root ${WEBROOT};" ${sites_available})
+        if [ -z "${WEBCONF}" ]; then
+            echo "Please cd to a folder that contains a Nginx-hosted website."
+            exit 1;
+        fi
+        # disabling auth if requested, regardless of the user account
+        if [ "_${2}" = "_off" ]; then
+            echo "Disabling HTTP Basic Auth for this website."
+            manage_http_basic_auth "${2}" "off"
+            exit 0;
+        fi
+        HTTP_HTPA="${WEBCONF}.htpasswd"
+        # if the passwords file exists
+        if [ -f "${HTTP_HTPA}" ]; then
+            # and if the requested user is already listed in the passwords file
+            if grep -q "${2}:" "${HTTP_HTPA}"; then
+                # ask whether to delete the user or update password
+                read -p "User ${HTTP_USER} exists. Update or delete? [U/d]:" HTTP_ACT
+                if [ "_${HTTP_ACT}" = "_d" ] || [ "_${HTTP_ACT}" = "_D" ]; then
+                    echo "Disabling HTTP Basic Auth for ${2}."
+                    manage_http_basic_auth "${2}" "off"
+                    exit 0;
+                fi
+            fi
+        fi
+        # otherwise, set password for the user (regardless of whether it exists already)
+        echo "Configuring HTTP Basic Auth for ${2}."
+        manage_http_basic_auth "${2}" "on"
         ;;
     *)
         echo "**** USAGE:"
