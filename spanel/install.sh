@@ -582,7 +582,7 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~*(?<susmatch>(<|%3c)\?)" 1;
     "~*(?<susmatch>\?(>|%3e))" 1;
     "~(?<susmatch>_(SERVER|GET|POST|FILES|REQUEST|SESSION|ENV|COOKIE)\[)" 1;
-    "~*(?<susmatch>(\\x|%)(3c|3e|5c|22|27)+)" 1;
+    "~*(?<susmatch>(\\x|%)(3c|3e|5c|27)+)" 1;
     "~*(?<susmatch>(un)?hex\()" 1;
     "~*(?<susmatch>base64_(en|de)code)" 1;
     "~*(?<susmatch>file_(put|get)_contents)" 1;
