@@ -583,14 +583,12 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~*(?<susmatch>\?(>|%3e))" 1;
     "~(?<susmatch>_(SERVER|GET|POST|FILES|REQUEST|SESSION|ENV|COOKIE)\[)" 1;
     "~*(?<susmatch>(\\x|%)(3c|3e|5c|27)+)" 1;
-    "~*(?<susmatch>(un)?hex([%0-9a-f|\W]*)(\(|%28))" 1;
     "~*(?<susmatch>base64_(en|de)code)" 1;
     "~*(?<susmatch>file_(put|get)_contents)" 1;
     "~*(?<susmatch>call_user_func_array)" 1;
     "~*(?<susmatch>(mb_)?ereg_replace)" 1;
-    "~*(?<susmatch>char([%0-9a-f|\W]*)(\(|%28))" 1;
-    "~*(?<susmatch>concat([%0-9a-f|\W]*)(\(|%28))" 1;
-    "~*(?<susmatch>eval([%0-9a-f|\W]*)(\(|%28))" 1;
+    "~*(?<susmatch>(un)?hex([%0-9a-f|\W]*)(\(|%28))" 1;
+    "~*(?<susmatch>(char|concat|eval)([%0-9a-f|\W]*)(\(|%28))" 1;
     "~*(?<susmatch>(union([%0-9a-f|\W]*))?select([%0-9a-f|\W]*)from)" 1;
     "~*(?<susmatch>union([%0-9a-f|\W]*)select(([%0-9a-f|\W]*)from)?)" 1;
 }
