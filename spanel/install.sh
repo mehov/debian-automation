@@ -579,6 +579,8 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     default 0;
     "~(?<susmatch>127\.0\.0\.1)" 1;
     "~(?<susmatch>(\.\./)+)" 1;
+    "~(?<susmatch>(\/\*)(.*?)(\*\/))" 1;#bugs.mysql.com/bug.php?id=28779
+    "~(?<susmatch>--(\+|%[0-9a-f]+| |$)+)" 1;#dev.mysql.com/doc/refman/5.6/en/ansi-diff-comments.html
     "~*(?<susmatch>(<|%3c)\?)" 1;
     "~*(?<susmatch>\?(>|%3e))" 1;
     "~(?<susmatch>_(SERVER|GET|POST|FILES|REQUEST|SESSION|ENV|COOKIE)\[)" 1;
