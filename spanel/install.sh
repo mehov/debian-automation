@@ -588,7 +588,7 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~*(?<susmatch>call_user_func_array)" 1;
     "~*(?<susmatch>(mb_)?ereg_replace)" 1;
     "~*(?<susmatch>(un)?hex([%0-9a-f|\W]*)(\(|%28))" 1;
-    "~*(?<susmatch>(chr|char|concat|eval|now|receive_message|select|sleep|sysdate)([%0-9a-f|\W]*)(\(|%28))" 1;
+    "~*(?<susmatch>(benchmark|chr|char|concat|eval|extractvalue|md5|now|receive_message|select|sleep|sysdate)([%0-9a-f|\W]*)(\(|%28))" 1;
     "~*(?<susmatch>(union([%0-9a-f|\W]*))?select([%0-9a-f|\W]*)from)" 1;
     "~*(?<susmatch>union([%0-9a-f|\W]*)select(([%0-9a-f|\W]*)from)?)" 1;
 }
