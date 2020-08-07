@@ -580,7 +580,7 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~(?<susmatch>127\.0\.0\.1)" 1;
     "~(?<susmatch>(\.\./)+)" 1;
     "~(?<susmatch>(\/\*)(.*?)(\*\/))" 1;#bugs.mysql.com/bug.php?id=28779
-    "~(?<susmatch>--(\+|%[0-9a-f]+| |$)+)" 1;#dev.mysql.com/doc/refman/5.6/en/ansi-diff-comments.html
+    "~(?<susmatch>--(\+|%[0-9a-f]{2}| |$)+)" 1;#dev.mysql.com/doc/refman/5.6/en/ansi-diff-comments.html
     "~*(?<susmatch>(<|%3c)\?)" 1;
     "~*(?<susmatch>\?(>|%3e))" 1;
     "~(?<susmatch>_(SERVER|GET|POST|FILES|REQUEST|SESSION|ENV|COOKIE)\[)" 1;
@@ -589,9 +589,9 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~*(?<susmatch>file_(put|get)_contents)" 1;
     "~*(?<susmatch>call_user_func_array)" 1;
     "~*(?<susmatch>(mb_)?ereg_replace)" 1;
-    "~*(?<susmatch>(benchmark|chr|char|concat|eval|extractvalue|hex|md5|now|receive_message|select|sleep|sysdate)([%0-9a-f|\W]*)(\(|%28))" 1;
-    "~*(?<susmatch>select( |%[a-f0-9]+|\()(.*)( |%[a-f0-9]+|\))from)" 1;
-    "~*(?<susmatch>union([%0-9a-f|\W]*)select(([%0-9a-f|\W]*)from)?)" 1;
+    "~*(?<susmatch>(benchmark|chr|char|concat|eval|extractvalue|hex|md5|now|receive_message|select|sleep|sysdate)(%[0-9a-f]{2}|\W)*(\(|%28))" 1;
+    "~*(?<susmatch>select( |%[a-f0-9]{2}|\()(.*)( |%[a-f0-9]{2}|\))from)" 1;
+    "~*(?<susmatch>union(%[0-9a-f]{2}|\W)+select((%[0-9a-f]{2}|\W)+from)?)" 1;
 }
 log_format suslog '$remote_addr /$susmatch/ - $remote_user $host [$time_local] '
     '"$request" $status $body_bytes_sent '
