@@ -590,7 +590,7 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~*(?<susmatch>call_user_func_array)" 1;
     "~*(?<susmatch>(mb_)?ereg_replace)" 1;
     "~*(?<susmatch>(benchmark|chr|char|concat|eval|extractvalue|hex|md5|now|receive_message|select|sleep|sysdate)(%[0-9a-f]{2}|\W)*(\(|%28))" 1;
-    "~*(?<susmatch>select( |%[a-f0-9]{2}|\()(.*)( |%[a-f0-9]{2}|\))from)" 1;
+    "~*(?<susmatch>select( |%[a-f0-9]{2}|\()+(.*)( |%[a-f0-9]{2}|\))+from)" 1;
     "~*(?<susmatch>union(%[0-9a-f]{2}|\W)+select((%[0-9a-f]{2}|\W)+from)?)" 1;
 }
 log_format suslog '$remote_addr /$susmatch/ - $remote_user $host [$time_local] '
