@@ -56,6 +56,9 @@ nginx_vhost_conf_name() {
 create_nginx_host() {
     # $1=hostname; $2=aliases; $3=public_dir; $4=config_dir; $5=certbot_path_opt
     conf_file_name=`nginx_vhost_conf_name ${1}`
+    if [ -f "${sites_available}/${conf_file_name}" ]; then
+        rm "${sites_available}/${conf_file_name}"
+    fi
     if [ ! -z "${2}" ]; then
 cat >> "${sites_available}/${conf_file_name}" << EOF
 server {
@@ -99,6 +102,12 @@ EOF
         $5 certonly --non-interactive --agree-tos --email "${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "${domains}"
         if [ ! -r "/etc/letsencrypt/live/$1/fullchain.pem" ]; then
             echo "Can't find the certificate file. Aborting."
+            if [ -f "${sites_available}/${conf_file_name}" ]; then
+                rm "${sites_available}/${conf_file_name}"
+            fi
+            if [ -h "${sites_enabled}/${conf_file_name}" ]; then
+                rm "${sites_enabled}/${conf_file_name}"
+            fi
             exit 1
         fi
         # cut -3 lines from the end of file (.ngaccess, vhost-common.conf, bracket)
