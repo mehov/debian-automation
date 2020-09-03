@@ -438,7 +438,7 @@ permit_writing() {
     chmod g+ws "${ITEMPATH}" # chmod the folder and newly created items
     if [ -d "${ITEMPATH}" ] && [ "y" != "${RM_Yn}" ]; then
         # find and chmod the subfolders, if any
-        find "${ITEMPATH}" -type d -exec chmod g+x {} \;
+        find "${ITEMPATH}" -type d -exec chmod g+ws {} \;
     fi
     # abort if no HTTP or PHP blocking is requested
     if [ "y" != "${BH_Yn}" ] && [ "y" != "${BP_Yn}" ]; then
