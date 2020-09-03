@@ -308,7 +308,9 @@ try_files \$uri \$uri/ /index.php?\$args;
     else
         echo "exists."
     fi
-    echo "# FTP p:${FTP_PORT} u:${website_user} p:${wdpassword}" >> ${ngaccess_file}
+    if [ -n "${FTP_PORT}" ]; then
+        echo "# FTP p:${FTP_PORT} u:${website_user} p:${wdpassword}" >> ${ngaccess_file}
+    fi
     create_nginx_host "$1" "${aliases}" "${public_dir}" "${site_dir}" "${CERTBOT_PATH_OPT}"
     #for alias in $aliases; do
     #    create_nginx_host $alias ${public_dir} ${site_dir} ${CERTBOT_PATH_OPT}
