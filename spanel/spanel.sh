@@ -695,6 +695,7 @@ case "${1}" in
         VAR_LSHA=$(cat "${VAR_TMP}" | git hash-object --stdin)
         VAR_RSHA=$(grep --color=never -Po '"sha":.*?[^\\]",' "${VAR_JSON}" | cut -d '"' -f4)
         if [ "_${VAR_LSHA}" = "_${VAR_RSHA}" ]; then
+            printf "Checksum matched. Replacing ${0} with ${VAR_TMP}\n"
             cat "${VAR_TMP}" > "${0}"
         else
             printf "Checksum mismatch:\n"
