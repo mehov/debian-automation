@@ -636,6 +636,10 @@ if [ ! "${PHP_VER}" = "0" ]; then
     chmod +x "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
     # CONFIGURING PHP-FPM
+    # find php-fpm.conf path, regardless of php-fpm version
+    PHP_FPM_CONF=$(find /etc/php -path "*/fpm/*" -type f -name "php-fpm.conf")
+    # change the log level to warning
+    sed -i "s/^;* *log_level *= *[^ ]*\$/log_level = warning/" ${PHP_FPM_CONF}
     # find php.ini path, regardless of php-fpm version
     PHP_FPM_INI=$(find /etc/php  -path "*/fpm/*" -type f -name "php.ini")
     # make sure opcache is enabled
