@@ -331,6 +331,7 @@ EOF
     do_install fail2ban
     do_install dnsutils
     do_install whois
+    do_install net-tools
     if [ -n "${ALERTEMAIL}" ]; then
         do_install nullmailer
     fi
