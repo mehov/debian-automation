@@ -636,6 +636,7 @@ if [ ! "${PHP_VER}" = "0" ]; then
     curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
     chmod +x "$WWW_ROOT/composer.phar"
     php "$WWW_ROOT/composer.phar"
+    ln -s "$WWW_ROOT/composer.phar" "/usr/bin/composer"
     # CONFIGURING PHP-FPM
     # find php-fpm.conf path, regardless of php-fpm version
     PHP_FPM_CONF=$(find /etc/php -path "*/fpm/*" -type f -name "php-fpm.conf")
