@@ -310,6 +310,7 @@ EOF
     header "Installing core software"
     do_install build-essential
     #do_install gcc
+    do_install sudo
     do_install coreutils
     do_install apt-utils
     do_install iptables
@@ -785,8 +786,12 @@ if [ "${noroot_Yn}" = "y" ]; then
     sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" /etc/ssh/sshd_config
     # Whitelist the non-SSH user
     echo "AllowUsers ${SSH_USER}" >> /etc/ssh/sshd_config
+    # Create the SSH user inside the group "sudo"
     useradd -s /bin/bash -md "${DIR_HOME}" -g sudo $SSH_USER
+    # Also add to the group "www-data"
     usermod -a -G www-data ${SSH_USER}
+    # Finally, make this user a sudoer too
+    echo "${SSH_USER} ALL=(ALL) NOPASSWD: ALL" | (su -c "EDITOR='tee' visudo -f /etc/sudoers.d/${SSH_USER}")
     if [ -d "${WWW_ROOT}" ]; then
         chown -R ${SSH_USER} "${WWW_ROOT}"
     fi
