@@ -939,7 +939,9 @@ case "$1" in
     *)
         read -p "Using this is your own risk and responsibility. [Y/n]: " inststart
         if [ "${inststart}" != "N" ] && [ "${inststart}" != "n" ]; then
-            install
+            do_install screen
+            BIN_SCREEN=$(which screen)
+            "${BIN_SCREEN}" -S "spanel" bash "${0}" install
         else
             echo "Aborted."
         fi
