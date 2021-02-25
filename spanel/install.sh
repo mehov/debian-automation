@@ -12,7 +12,7 @@ PORT_MYSQL_DEFAULT="330${PORT_MYSQL_DEFAULT}"
 SSH_USER_DEFAULT="admin"
 FTP_USER="ftp-data"
 WWW_ROOT="/var/www"
-CERTBOT_PATH="/usr/local/bin/certbot-auto"
+CERTBOT_PATH=""
 HOSTMANAGER_PATH="/root/spanel.sh"
 SSH_CLIENT_IP=$(who -m --ips | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
 
@@ -102,7 +102,6 @@ install() {
     SESSION_ID=$(random_string -l 4)
     # start the config
     report_append "WWW_ROOT" $WWW_ROOT
-    report_append "CERTBOT_PATH" $CERTBOT_PATH
     # make sure we know the IP address of this server
     do_install dnsutils
     SERVER_IP=$(hostname -i)
@@ -773,11 +772,9 @@ fi
 if [ "${LECertbot_Yn}" = "" ] ||  [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_Yn}" = "y" ]; then
     header "Installing the Lets Encrypt certbot"
     # install certbot for letsencrypt
-    # https://certbot.eff.org/all-instructions/#web-hosting-service-nginx
-    wget -O ${CERTBOT_PATH} https://dl.eff.org/certbot-auto
-    chown root "${CERTBOT_PATH}"
-    chmod 0755 "${CERTBOT_PATH}"
-    ${CERTBOT_PATH} --non-interactive
+    do_install certbot
+    CERTBOT_PATH=$(which certbot)
+    report_append "CERTBOT_PATH" $CERTBOT_PATH
     echo "0 4 1,15 * * root ${HOSTMANAGER_PATH} certupdate >> /var/log/certupdate.log 2>&1" > /etc/cron.d/certupdate
 fi
 
