@@ -82,7 +82,6 @@ cat >> "${sites_available}/${conf_file_name}" << EOF
         root $3; # config_path $4
         include snippets/vhost-letsencrypt.conf;
         include snippets/vhost-common.conf;
-        include "$4/.ngaccess";
     }
 EOF
     if ! [ -f "${sites_enabled}/${conf_file_name}" ]; then
