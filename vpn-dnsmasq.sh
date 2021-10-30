@@ -37,6 +37,8 @@ service dnsmasq restart
 
 # block dns for everyone else
 # (https://serverfault.com/questions/374846/block-all-incoming-dns-requests-except-from-ips-x-y/374853#374853)
+iptables -A INPUT -p udp --dport 53 -s 127.0.0.1 -j ACCEPT
+iptables -A INPUT -p tcp --dport 53 -s 127.0.0.1 -j ACCEPT
 iptables -A INPUT -p udp --dport 53 -s 192.168.43.0/24 -j ACCEPT
 iptables -A INPUT -p tcp --dport 53 -s 192.168.43.0/24 -j ACCEPT
 iptables -A INPUT -p udp --dport 53 -j DROP
