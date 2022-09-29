@@ -667,7 +667,7 @@ case "${1}" in
             echo "Please specify the primary hostname"
             exit 1;
         fi
-        add "${2}"
+        add "${2}" "" "" "${3}"
         restart_nginx
         ;;
     "certupdate")
