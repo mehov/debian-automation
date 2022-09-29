@@ -197,14 +197,14 @@ add() {
     database_name_random=`echo $1 | sed -e 's/\W//g'`;
     database_user_random=`random_string -l 16`
     database_password_waitforit_random=`random_string -l 16`
-    if [ -z $4 ]; then
+    if [ -z "${4}" ]; then
         read -p "Enter alias (leave blank to skip): " alias
         if [ "$alias" != "" ] && [ "$alias" != "n" ] && [ "$alias" != "N" ]; then
             add_alias $alias
         fi
     else
-        if [ $4 != "N" ] && [ $4 != "n" ]; then
-            aliases=$aliases" "$4
+        if [ "${4}" != "N" ] && [ "${4}" != "n" ]; then
+            aliases="${aliases} ${4}"
         fi
     fi
     if [ -z $2 ]; then
