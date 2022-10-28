@@ -938,6 +938,10 @@ case "$1" in
         if [ "${inststart}" != "N" ] && [ "${inststart}" != "n" ]; then
             do_install screen
             BIN_SCREEN=$(which screen)
+            if [ -z "${BIN_SCREEN}" ]; then
+                echo "Screen is required but not installed"
+                exit
+            fi
             "${BIN_SCREEN}" -S "spanel" bash "${0}" install
         else
             echo "Aborted."
