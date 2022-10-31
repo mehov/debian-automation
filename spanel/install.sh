@@ -340,7 +340,7 @@ EOF
     do_install vim
     do_install unzip
     do_install bc
-    do_install cfget
+    do_install crudini
     do_install easy-rsa
     do_install logrotate
     do_install ntp
