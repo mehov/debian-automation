@@ -6,12 +6,16 @@ if [ "$(whoami)" != 'root' ]; then
     exit 1;
 fi
 
+ini_get() {
+    echo $(cfget -qC ~/.bonjour.ini "${1}")
+}
+
 ### Script params
-CERTBOT_PATH=$(cfget -qC ~/.bonjour.ini "CERTBOT_PATH")
-LETSENCRYPT_ROOT=$(cfget -qC ~/.bonjour.ini "LETSENCRYPT_ROOT")
-www_root=$(cfget -qC ~/.bonjour.ini "WWW_ROOT")
-ftp_user=$(cfget -qC ~/.bonjour.ini "FTP_USER")
-FTP_PORT=$(cfget -qC ~/.bonjour.ini "FTP_PORT")
+CERTBOT_PATH=$(ini_get "CERTBOT_PATH")
+LETSENCRYPT_ROOT=$(ini_get "LETSENCRYPT_ROOT")
+www_root=$(ini_get "WWW_ROOT")
+ftp_user=$(ini_get "FTP_USER")
+FTP_PORT=$(ini_get "FTP_PORT")
 if ! [ id -u "$ftp_user" >/dev/null 2>&1 ]; then
     ftp_user="www-data"
 fi
@@ -20,9 +24,9 @@ sites_available="${nginx_conf_dir}/sites-available"
 sites_enabled="${nginx_conf_dir}/sites-enabled"
 mysql="$(which mysql)"
 # mysql root password
-mysql_password="$(cfget -qC ~/.bonjour.ini "MYSQL_ROOT_PASS")"
-mysql_admin="$(cfget -qC ~/.bonjour.ini "MYSQL_REMO_USER")"
-mysql_admin_password="$(cfget -qC ~/.bonjour.ini "MYSQL_REMO_PASS")"
+mysql_password=$(ini_get "MYSQL_ROOT_PASS")
+mysql_admin=$(ini_get "MYSQL_REMO_USER")
+mysql_admin_password=$(ini_get "MYSQL_REMO_PASS")
 
 ### Functions
 random_string() {
@@ -222,7 +226,7 @@ add() {
     #read -p "Create \"public_html\" subdir (i.e. "$site_dir"/"$public_dir_name_default")? [y/N]: " create_public_dir
     create_public_dir="N"
 
-    MYSQL_PORT=$(cfget -qC ~/.bonjour.ini "MYSQL_PORT")
+    MYSQL_PORT=$(ini_get "MYSQL_PORT")
     if [ -z "${MYSQL_PORT}" ]; then
         create_database="n"
     elif [ -z $3 ]; then
@@ -252,7 +256,7 @@ add() {
         fi
     fi
 
-    FTP_PORT=$(cfget -qC ~/.bonjour.ini "FTP_PORT")
+    FTP_PORT=$(ini_get "FTP_PORT")
     if [ -n "${FTP_PORT}" ]; then
         read -p "Create a separate FTP/UNIX user? [Y/n]: " create_user
     else
@@ -500,9 +504,9 @@ manage_trusted_ips() {
     WHTLST_IPS="${1}"
     # collect the ports from the after-install config
     CONF_PATH="/root/.bonjour.ini"
-    SSH_PORT=$(cfget -qC "${CONF_PATH}" "SSH_PORT")
-    FTP_PORT=$(cfget -qC "${CONF_PATH}" "FTP_PORT")
-    MYSQL_PORT=$(cfget -qC "${CONF_PATH}" "MYSQL_PORT")
+    SSH_PORT=$(ini_get "SSH_PORT")
+    FTP_PORT=$(ini_get "FTP_PORT")
+    MYSQL_PORT=$(ini_get "MYSQL_PORT")
     if [ -z "${SSH_PORT}" ] && [ -z "${FTP_PORT}" ] && [ -z "${MYSQL_PORT}" ]; then
         echo "No ports to secure found in ${CONF_PATH}."
         exit 1;
