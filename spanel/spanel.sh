@@ -8,6 +8,9 @@ fi
 
 ini_get() {
     PATH_INI="/root/.bonjour.ini"
+    if ! grep -q "^${1}=" "${PATH_INI}"; then
+        return 0
+    fi
     BIN_CRUDINI=$(which crudini)
     if [ -n "${BIN_CRUDINI}" ]; then
         echo $(${BIN_CRUDINI} --get ${PATH_INI} "" "${1}")
