@@ -7,7 +7,17 @@ if [ "$(whoami)" != 'root' ]; then
 fi
 
 ini_get() {
-    echo $(cfget -qC ~/.bonjour.ini "${1}")
+    PATH_INI="/root/.bonjour.ini"
+    BIN_CRUDINI=$(which crudini)
+    if [ -n "${BIN_CRUDINI}" ]; then
+        echo $(${BIN_CRUDINI} --get ${PATH_INI} "" "${1}")
+        return 0
+    fi
+    BIN_CFGET=$(which cfget)
+    if [ -n "${BIN_CFGET}" ]; then
+        echo $(${BIN_CFGET} -qC ${PATH_INI} "${1}")
+        return 0
+    fi
 }
 
 ### Script params
