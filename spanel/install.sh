@@ -375,22 +375,9 @@ EOF
     fi
     if ${_php}; then
         header "Installing PHP and it's modules"
-        do_install php${PHP_VER}*-common
-        do_install php${PHP_VER}*-cli
-        do_install php${PHP_VER}*-fpm
-        do_install php${PHP_VER}*-mysql
-        do_install php${PHP_VER}*-curl
-        do_install php${PHP_VER}*-gd
-        do_install php${PHP_VER}*-mcrypt
-        do_install php${PHP_VER}*-intl
-        do_install php${PHP_VER}*-json
-        do_install php${PHP_VER}*-bcmath
-        do_install php${PHP_VER}*-imap
-        do_install php${PHP_VER}*-mbstring
-        do_install php${PHP_VER}*-xml
-        do_install php${PHP_VER}*-opcache
-        do_install php${PHP_VER}*-zip
-        do_install php${PHP_VER}*-sqlite3
+        for PHP_MOD in "common cli fpm mysql curl gd mcrypt intl json bcmath imap mbstring xml opcache zip sqlite3"; do
+            do_install php${PHP_VER}*-${PHP_MOD}
+        done
     fi
     header "Configuring the software"
     # set the timezone
