@@ -697,9 +697,8 @@ fi
 
 if ${_mysql}; then
     header "Configuring MySQL"
-    sed -i "s/^#port/port/g" /etc/mysql/mariadb.conf.d/50-server.cnf
-    sed -i "s/= 3306/= ${_mysql_port}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
-    sed -i "s/= 127.0.0.1/= ${_server_ip}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
+    crudini --set "/etc/mysql/mariadb.conf.d/50-server.cnf" mysqld port ${_mysql_port}
+    crudini --set "/etc/mysql/mariadb.conf.d/50-server.cnf" mysqld bind-address "${_server_ip}"
     service mysql start
     mysqladmin -u root password "${MYSQL_ROOT_PASS}"
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "CREATE USER '${MYSQL_REMO_USER}'@'%' IDENTIFIED BY '${MYSQL_REMO_PASS}';"
