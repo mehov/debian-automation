@@ -3,20 +3,68 @@
 ##todo http://serverfault.com/questions/172831/sending-email-from-my-server#comment150117_172834
 
 
+ARGS="$@"
 PORT_SSH_DEFAULT=$(date -u "+%N" | cut -c 7,8)
 PORT_SSH_DEFAULT="220${PORT_SSH_DEFAULT}"
 PORT_FTP_DEFAULT=$(date -u "+%N" | cut -c 6,7)
 PORT_FTP_DEFAULT="210${PORT_FTP_DEFAULT}"
 PORT_MYSQL_DEFAULT=$(date -u "+%N" | cut -c 8,7)
 PORT_MYSQL_DEFAULT="330${PORT_MYSQL_DEFAULT}"
-SSH_USER_DEFAULT="admin"
-FTP_USER="ftp-data"
 WWW_ROOT="/var/www"
 CERTBOT_PATH=""
 HOSTMANAGER_PATH="/root/spanel.sh"
 SSH_CLIENT_IP=$(who -m --ips | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
 
 # reusable functions
+input() { # try taking required variable from flags/arguments, else prompt
+    NAME="${1}" # shorthand to the name of requested variable
+    PROMPT="${2}" # shorthand to the prompt text
+    DEFAULT="${3}" # shorthand to the default value
+    IS_YN=false # determine whether prompt expects a yes or no answer
+    if [ "${DEFAULT}" = true ] || [ "${DEFAULT}" = false ]; then
+        IS_YN=true
+    fi
+    VALUE="" # clean up
+    for ARG in "${ARGS}"; do # loop through flags/arguments passed to the script
+        KEY=$(echo ${ARG} | cut -f1 -d=) # parse --KEY out of --KEY=VALUE
+        if [ "${KEY}" != "--${NAME}" ]; then # skip keys that don't match
+            continue
+        fi
+        KEY_LENGTH=${#KEY}
+        VALUE="${ARG:$KEY_LENGTH+1}" # parse VALUE out of --KEY=VALUE
+        if "${IS_YN}" && [ -z "${VALUE}" ]; then
+            VALUE=true # consider a flag provided with no value as a yes
+        fi
+    done
+    if [ -z "${VALUE}" ]; then # if variable was not found in arguments, prompt
+        PROMPT_DEFAULT="${DEFAULT}" # displayed default value
+        if "${IS_YN}"; then # if expecting boolean, format the prompt as Y/N
+            if "${DEFAULT}"; then
+                PROMPT_DEFAULT="Y/n"
+            else
+                PROMPT_DEFAULT="y/N"
+            fi
+        fi
+        if [ ! -z "${PROMPT_DEFAULT}" ]; then
+            PROMPT_DEFAULT=" [${PROMPT_DEFAULT}]"
+        fi
+        read -p "${PROMPT}${PROMPT_DEFAULT}: " "VALUE" # finally, prompt
+    else
+        header "Received ${KEY}: ${VALUE}"
+    fi
+    if [ -z "${VALUE}" ]; then # if still empty after prompt, revert to default
+        VALUE="${DEFAULT}"
+    fi
+    if "${IS_YN}"; then # if expecting boolean, convert the value we have
+        if [ "${VALUE}" = "Y" ] || [ "${VALUE}" = "y" ]; then
+            VALUE=true
+        fi
+        if [ "${VALUE}" = "N" ] || [ "${VALUE}" = "n" ]; then
+            VALUE=false
+        fi
+    fi
+    printf -v "_${NAME}" "%s" "${VALUE}" # stackoverflow.com/a/55331060
+}
 random_string() {
     if [ $1="-l" ]; then
             length=$2
@@ -112,45 +160,29 @@ install() {
 
     echo ""
     echo "Receive security notifications and alerts (SSH, fail2ban)?"
-    read -p "Enter an e-mail address, or leave empty to skip: " ALERTEMAIL
+    input "email" "Enter an e-mail address, or leave empty to skip" ""
 
-    read -p "Install Nginx? [Y/n]: " NGINX_Yn
-    if [ "${NGINX_Yn}" = "" ] ||  [ "${NGINX_Yn}" = "Y" ] || [ "${NGINX_Yn}" = "y" ]; then
-        PORT_HTTP="80"
-    else 
-        PORT_HTTP="0"
+    input "nginx" "Install Nginx?" false
+    if ${_nginx}; then
+        input "certbot" "Install the Let's Encrypt Certbot?" true
     fi
-    read -p "Install PHP? [Y/n]: " PHP_Yn
-    if [ "${PHP_Yn}" = "" ] ||  [ "${PHP_Yn}" = "Y" ] || [ "${PHP_Yn}" = "y" ]; then
+
+    input "php" "Install PHP?" false
+    if ${_php}; then
         PHP_VER="7"
-        read -p "Expected size of a single PHP process, in MB [64]: " PHP_PSZ
-        if [ -z "${PHP_PSZ}" ]; then
-            PHP_PSZ="64"
-        fi
+        input "php_psz" "Expected size of a single PHP process, in MB" 64
     else 
         PHP_VER="0"
     fi
-
-    LECertbot_Yn="n"
-    if [ ! "$PORT_HTTP" = "0" ]; then
-        read -p "Install the Let's Encrypt Certbot? [Y/n]: " LECertbot_Yn
-    fi
-
     hostname_old=`hostname`
     if [ "${hostname_old}" = "" ] || [ "${hostname_old}" = "vps" ]; then
-        read -p "New hostname[+]: " nhostname
-        if [ "$nhostname" = "" ]; then
-            nhostname="+"
+        input "hostname" "New hostname" "+"
+        if [ "${_hostname}" = "+" ]; then
+            _hostname=`random_string -l 4`
         fi
-        if [ "$nhostname" = "+" ]; then
-            nhostname=`random_string -l 4`
-            hostname $nhostname
+        if [ "${_hostname}" != "" ]; then
+            hostname "${_hostname}"
         fi
-        if [ "$nhostname" != "" ]; then
-            hostname $nhostname
-        fi
-    else
-        nhostname="${hostname_old}"
     fi
 
     printf "\n\n\n\n"
@@ -163,45 +195,25 @@ install() {
     printf "static IP from your ISP, or make sure your VPS provider has "
     printf "an emergency console or is able to step in; otherwise choose 'n' below.\n"
     echo ""
-    read -p "Secure commonly hacked ports by whitelisting your IP addresses? [Y/n]: " WHTLST_Yn
-    if [ "${WHTLST_Yn}" = "" ] || [ "${WHTLST_Yn}" = "Y" ] || [ "${WHTLST_Yn}" = "y" ]; then
-        read -p "Whitelisted IP addresses, space-separated [${SSH_CLIENT_IP}]: " WHTLST_IPS
-        if [ -z "${WHTLST_IPS}" ]; then
-            WHTLST_IPS="${SSH_CLIENT_IP}"
-        fi
+    input "whitelist_ips" "Secure commonly hacked ports by whitelisting your IP addresses?" true
+    if $_whitelist_ips; then
+        input "whitelisted_ips" "Whitelisted IP addresses, space-separated" "${SSH_CLIENT_IP}"
     else
-        WHTLST_IPS=""
+        whitelisted_ips=""
     fi
 
-    read -p "Use your public SSH key instead of password-based authentication? You'll need to paste your SSH key at the end of this setup so that the server lets you in next time you connect. [Y/n]: " nopass_Yn
-    if [ "${nopass_Yn}" = "" ] || [ "${nopass_Yn}" = "Y" ]; then
-        nopass_Yn="y"
+    input "nopass" "Use your public SSH key instead of password-based authentication? You'll need to paste your SSH key at the end of this setup so that the server lets you in next time you connect" true
+
+    input "noroot" "Disable direct root login? Using a non-root account and switching to root only when needed is more secure. Choosing 'n' will keep the direct root login" true
+    if ${_noroot}; then
+        input "ssh_user" "SSH non-root user" "admin"
+        report_append "SSH_USER" ${_ssh_user}
     fi
 
-    read -p "Disable direct root login? Using a non-root account and switching to root only when needed is more secure. Choosing 'n' will keep the direct root login [Y/n]: " noroot_Yn
-    if  [ "${noroot_Yn}" = "Y" ] || [ "${noroot_Yn}" = "" ]; then
-        noroot_Yn="y"
-    fi
-    if [ "${noroot_Yn}" = "y" ]; then
-        read -p "SSH non-root user [${SSH_USER_DEFAULT}]: " SSH_USER
-        if [ "$SSH_USER" = "" ]; then
-            SSH_USER=$SSH_USER_DEFAULT
-        fi
-        report_append "SSH_USER" $SSH_USER
-    fi
+    input "ssh_port" "SSH port" ${PORT_SSH_DEFAULT}
+    report_append "SSH_PORT" ${_ssh_port}
 
-    read -p "SSH port [default=${PORT_SSH_DEFAULT}]: " PORT_SSH
-    if [ "$PORT_SSH" = "" ]; then
-        PORT_SSH=$PORT_SSH_DEFAULT
-    fi
-    report_append "SSH_PORT" $PORT_SSH
-
-    read -p "FTP port, or '0' to skip [${PORT_FTP_DEFAULT}]: " PORT_FTP
-    if [ "$PORT_FTP" = "" ]; then
-        PORT_FTP=$PORT_FTP_DEFAULT
-    fi
-
-    if [ ! "$PORT_HTTP" = "0" ] && [ ! -d $WWW_ROOT ]; then
+    if ${_nginx} && [ ! -d $WWW_ROOT ]; then
         mkdir $WWW_ROOT
     fi
     if [ -d "${WWW_ROOT}" ]; then
@@ -209,51 +221,39 @@ install() {
         chmod g+s "${WWW_ROOT}"
     fi
 
-    if [ ! "$PORT_FTP" = "0" ]; then
-        wdpasswordg=`random_string -l 16`
-        read -p "Enter a new password for user '$FTP_USER' [${wdpasswordg}]: " wdpassword
-        if [ "$wdpassword" = "" ]; then
-            wdpassword="${wdpasswordg}"
-        fi
-        cppassword=$(perl -e 'print crypt($ARGV[0], "password")' $wdpassword)
-        if id -u $FTP_USER >/dev/null 2>&1; then
-            pkill -u $FTP_USER
-            killall -9 -u $FTP_USER
-            usermod --home "$WWW_ROOT" $FTP_USER
-            usermod --password=$cppassword $FTP_USER
+    input "ftp" "Install FTP?" false
+    if ${_ftp}; then
+        input "ftp_port" "FTP port" ${PORT_FTP_DEFAULT}
+        input "ftp_user" "FTP user" "ftp-data"
+        input "ftp_password" "FTP password for '${_ftp_user}'" `random_string -l 16`
+        cppassword=$(perl -e 'print crypt($ARGV[0], "password")' ${_ftp_password})
+        if id -u ${_ftp_user} >/dev/null 2>&1; then
+            pkill -u ${_ftp_user}
+            killall -9 -u ${_ftp_user}
+            usermod --home "$WWW_ROOT" ${_ftp_user}
+            usermod --password=$cppassword ${_ftp_user}
         else
             #echo -e "/bin/false\n" >> /etc/shells
-            useradd -d "$WWW_ROOT" -p $cppassword -g www-data -s /bin/sh -M $FTP_USER
-            chown $FTP_USER $WWW_ROOT
+            useradd -d "$WWW_ROOT" -p $cppassword -g www-data -s /bin/sh -M ${_ftp_user}
+            chown ${_ftp_user} $WWW_ROOT
         fi
-        report_append "FTP_PORT" $PORT_FTP
-        report_append "FTP_USER" $FTP_USER
-        report_append "FTP_PASS" $wdpassword
+        report_append "FTP_PORT" ${_ftp_port}
+        report_append "FTP_USER" ${_ftp_user}
+        report_append "FTP_PASS" ${_ftp_password}
     else
         echo "**** FTP SKIPPED"
     fi
 
-    read -p "MySQL port, or '0' to skip [${PORT_MYSQL_DEFAULT}]: " PORT_MYSQL
-    if [ "$PORT_MYSQL" = "" ]; then
-        PORT_MYSQL=$PORT_MYSQL_DEFAULT
-    fi
-
-    if [ ! "$PORT_MYSQL" = "0" ]; then
+    input "mysql" "Install MySQL?" false
+    if ${_mysql}; then
+        input "mysql_port" "MySQL port" ${PORT_MYSQL_DEFAULT}
+        report_append "MYSQL_PORT" ${_mysql_port}
         MYSQL_ROOT_PASS=`random_string -l 16`
-        MYSQL_REMO_USER_RAND=`random_string -l 16`
-        MYSQL_REMO_PASS_RAND=`random_string -l 16`
-        read -p "MySQL remote access user name [${MYSQL_REMO_USER_RAND}]: " MYSQL_REMO_USER
-        if [ "$MYSQL_REMO_USER" = "" ]; then
-            MYSQL_REMO_USER=${MYSQL_REMO_USER_RAND}
-        fi
-        read -p "MySQL password for that user [${MYSQL_REMO_PASS_RAND}]: " MYSQL_REMO_PASS
-        if [ "$MYSQL_REMO_PASS" = "" ]; then
-            MYSQL_REMO_PASS=${MYSQL_REMO_PASS_RAND}
-        fi
-        report_append "MYSQL_PORT" $PORT_MYSQL
-        report_append "MYSQL_ROOT_PASS" $MYSQL_ROOT_PASS
-        report_append "MYSQL_REMO_USER" $MYSQL_REMO_USER
-        report_append "MYSQL_REMO_PASS" $MYSQL_REMO_PASS
+        report_append "MYSQL_ROOT_PASS" "${MYSQL_ROOT_PASS}"
+        input "mysql_remo_user" "MySQL remote access user" `random_string -l 16`
+        report_append "MYSQL_REMO_USER" "${_mysql_remo_user}"
+        input "mysql_remo_pass" "MySQL password for '${_mysql_remo_user}'" `random_string -l 16`
+        report_append "MYSQL_REMO_PASS" "${_mysql_remo_pass}"
     else
         echo "**** MySQL SKIPPED"
     fi
@@ -293,7 +293,7 @@ install() {
     echo "deb http://httpredir.debian.org/debian ${debian_codename} main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename}-backports main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://security.debian.org/ ${debian_codename}/updates main contrib non-free" >> /etc/apt/sources.list
-    if [ ! "$PORT_HTTP" = "0" ]; then
+    if ${_nginx}; then
         header "Adding Nginx repository to sources.list"
         echo "deb http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
         echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
@@ -350,7 +350,7 @@ EOF
     do_install fail2ban
     do_install whois
     do_install net-tools
-    if [ -n "${ALERTEMAIL}" ]; then
+    if [ -n "${_email}" ]; then
         do_install nullmailer
     fi
     do_install rush
@@ -361,22 +361,21 @@ EOF
 
     #do_install libpcre3-dev
     #do_install zlib1g-dev
-    if [ ! "$PORT_HTTP" = "0" ]; then
+    if ${_nginx}; then
         header "Installing Nginx"
         do_install nginx
     fi
-    if [ ! "$PORT_FTP" = "0" ]; then
+    if ${_ftp}; then
         header "Installing FTP (inetutils)"
         do_install inetutils-ftpd
     fi
-    if [ ! "$PORT_MYSQL" = "0" ]; then
+    if ${_mysql}; then
         header "Installing MariaDB"
         do_install mariadb-server
         systemctl enable mariadb
         service mysql stop
     fi
-
-    if [ ! "${PHP_VER}" = "0" ]; then
+    if ${_php}; then
         header "Installing PHP and it's modules"
         do_install php${PHP_VER}*-common
         do_install php${PHP_VER}*-cli
@@ -424,16 +423,16 @@ findtime = 1w
 bantime = 1w
 banaction = iptables-multiport
 banaction_allports = iptables-allports
-ignoreip = ${WHTLST_IPS}
+ignoreip = ${_whitelisted_ips}
 EOF
 
-if [ -n "${ALERTEMAIL}" ]; then
+if [ -n "${_email}" ]; then
     header "Setting up alerts"
-    report_append "ALERT_EMAIL" $ALERTEMAIL
+    report_append "ALERT_EMAIL" ${_email}
     # below is a way to avoid installing sendmail, exim, postfix, etc.
     # nullmailer is lightweight, but relay only; lets relay right to target MX
     # parse out recipient's email hostname
-    ALERTEMAILHOST=$(echo "${ALERTEMAIL}" | awk -F "@" '{print $2}')
+    ALERTEMAILHOST=$(echo "${_email}" | awk -F "@" '{print $2}')
     # read it's MX address record
     ALERTEMAILMX=$(dig +short "${ALERTEMAILHOST}" mx | sort -n | nawk '{print $2; exit}' | sed -e 's/\.$//')
     # save the MX record to nullmailer's config
@@ -447,7 +446,7 @@ if [ -n "${ALERTEMAIL}" ]; then
 if [ "\${PAM_TYPE}" != "close_session" ]; then
     ALERT_DATE=\$(LC_ALL=C date +"%a, %d %h %Y %T %z")
     ALERT_SUBJECT="SSH Login Alert: \${PAM_USER}@\${PAM_RHOST} to \$(hostname)"
-    printf %b "Subject: \${ALERT_SUBJECT}\n\$(env)\n\${ALERT_DATE}" | ${ALERTBIN} "${ALERTEMAIL}"
+    printf %b "Subject: \${ALERT_SUBJECT}\n\$(env)\n\${ALERT_DATE}" | ${ALERTBIN} "${_email}"
 fi
 EOFALERTSCRIPT
     chmod -w+x "${ALERTSCRIPT}"
@@ -456,13 +455,13 @@ EOFALERTSCRIPT
     # enable fail2ban email notifications
     echo "action = %(action_mwl)s" >> /etc/fail2ban/jail.local
     # configure fail2ban to notify the provided e-mail
-    sed -i "s/^#* *destemail *= *[^$]*/destemail = ${ALERTEMAIL}/" /etc/fail2ban/jail.conf
+    sed -i "s/^#* *destemail *= *[^$]*/destemail = ${_email}/" /etc/fail2ban/jail.conf
 fi
 
 # nginx configuration
 CPU_CORES_CNT=`nproc --all`
 ULIMIT=`ulimit -n`
-if [ ! "$PORT_HTTP" = "0" ]; then
+if ${_nginx}; then
     header "Configuring Nginx"
     if [ ! -d "/etc/nginx/sites-enabled" ]; then
         mkdir "/etc/nginx/sites-enabled"
@@ -558,7 +557,7 @@ location ~ /\. {
     deny all;
 }
 EOF
-    if [ ! "${PHP_VER}" = "0" ]; then
+    if ${_php}; then
         header "Configuring Nginx: PHP"
         PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
         cat >> /etc/nginx/snippets/vhost-common.conf << EOF
@@ -650,7 +649,7 @@ EOF
 service nginx start
 fi
 
-if [ ! "${PHP_VER}" = "0" ]; then
+if ${_php}; then
     header "Configuring PHP"
     curl -sS https://getcomposer.org/installer -o "$WWW_ROOT/composer.phar"
     chmod +x "$WWW_ROOT/composer.phar"
@@ -679,8 +678,8 @@ if [ ! "${PHP_VER}" = "0" ]; then
     # set max requests until respawn
     sed -i "s/^;* *pm\.max_requests *= *[^ ]*/pm.max_requests = 512/" ${PHP_WPCNF}
     # calculate max_children based on server RAM and estimated process size
-    PHP_PSZ_kB=$(echo "${PHP_PSZ}*1024" | bc) # convert from MB to kB
-    if [ ! "$PORT_MYSQL" = "0" ]; then
+    PHP_PSZ_kB=$(echo "${_php_psz}*1024" | bc) # convert from MB to kB
+    if ${_mysql}; then
         PHP_PSHR=0.5 # decrease if this server also hosts MySQL
     else
         PHP_PSHR=0.8 # increase if no MySQL runs on this server
@@ -698,10 +697,10 @@ if [ ! "${PHP_VER}" = "0" ]; then
     sed -i "s@^;* *php_admin_value\[error_log\] *= *[^ ]*@php_admin_value[error_log] = /var/log/php-fpm.log@" ${PHP_WPCNF}
 fi
 
-if [ ! "$PORT_MYSQL" = "0" ]; then
+if ${_mysql}; then
     header "Configuring MySQL"
     sed -i "s/^#port/port/g" /etc/mysql/mariadb.conf.d/50-server.cnf
-    sed -i "s/= 3306/= ${PORT_MYSQL}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
+    sed -i "s/= 3306/= ${_mysql_port}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
     sed -i "s/= 127.0.0.1/= ${SERVER_IP}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
     service mysql start
     mysqladmin -u root password "${MYSQL_ROOT_PASS}"
@@ -714,9 +713,9 @@ wget -O ${HOSTMANAGER_PATH} https://raw.githubusercontent.com/mehov/debian-autom
 chmod +x ${HOSTMANAGER_PATH}
 echo "alias spanel='bash ${HOSTMANAGER_PATH}'" >> /etc/bash.bashrc
 
-if [ ! "$PORT_FTP" = "0" ]; then
+if ${_ftp}; then
     header "Configuring FTP"
-    sed -i "s/\t21\/tcp/\t$PORT_FTP\/tcp/g" /etc/services
+    sed -i "s/\t21\/tcp/\t${_ftp_port}\/tcp/g" /etc/services
     #useradd ftpd
 cat > /etc/init.d/inetutils-ftpd << EOF
 #!/bin/sh
@@ -769,7 +768,7 @@ service inetutils-ftpd start
 update-rc.d inetutils-ftpd defaults
 fi
 
-if [ "${LECertbot_Yn}" = "" ] ||  [ "${LECertbot_Yn}" = "Y" ] || [ "${LECertbot_Yn}" = "y" ]; then
+if ${_certbot}; then
     header "Installing the Lets Encrypt certbot"
     # install certbot for letsencrypt
     do_install certbot
@@ -783,7 +782,7 @@ header "Configuring SSH"
 sed -i "s/^AcceptEnv/#AcceptEnv/g" /etc/ssh/sshd_config
 # Update the SSH port
 sed -i "s/#Port/Port/g" /etc/ssh/sshd_config
-sed -i "s/Port 22/Port $PORT_SSH/g" /etc/ssh/sshd_config
+sed -i "s/Port 22/Port ${_ssh_port}/g" /etc/ssh/sshd_config
 # Log More Information - help.ubuntu.com/community/SSH/OpenSSH/Configuring
 sed -i "s/LogLevel INFO/LogLevel VERBOSE/g" /etc/ssh/sshd_config
 # Disable empty passwords
@@ -794,26 +793,26 @@ sed -i "s/#X11Forwarding/X11Forwarding/g" /etc/ssh/sshd_config
 sed -i "s/X11Forwarding yes/X11Forwarding no/g" /etc/ssh/sshd_config
 # Set MaxAuthTries to 4 (https://superuser.com/a/1180018)
 sed -i 's/^ *# *MaxAuthTries *[^ ]*/MaxAuthTries 4/' /etc/ssh/sshd_config
-if [ "${noroot_Yn}" = "y" ]; then
-    DIR_HOME="/home/${SSH_USER}"
+if ${_noroot}; then
+    DIR_HOME="/home/${_ssh_user}"
     # Disable root login
     sed -i "s/#PermitRootLogin/PermitRootLogin/g" /etc/ssh/sshd_config
     sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" /etc/ssh/sshd_config
     # Whitelist the non-SSH user
-    echo "AllowUsers ${SSH_USER}" >> /etc/ssh/sshd_config
+    echo "AllowUsers ${_ssh_user}" >> /etc/ssh/sshd_config
     # Create the SSH user inside the group "sudo"
-    useradd -s /bin/bash -md "${DIR_HOME}" -g sudo $SSH_USER
+    useradd -s /bin/bash -md "${DIR_HOME}" -g sudo ${_ssh_user}
     # Also add to the group "www-data"
-    usermod -a -G www-data ${SSH_USER}
+    usermod -a -G www-data ${_ssh_user}
     # Finally, make this user a sudoer too
-    echo "${SSH_USER} ALL=(ALL) NOPASSWD: ALL" | (su -c "EDITOR='tee' visudo -f /etc/sudoers.d/${SSH_USER}")
+    echo "${_ssh_user} ALL=(ALL) NOPASSWD: ALL" | (su -c "EDITOR='tee' visudo -f /etc/sudoers.d/${_ssh_user}")
     if [ -d "${WWW_ROOT}" ]; then
-        chown -R ${SSH_USER} "${WWW_ROOT}"
+        chown -R ${_ssh_user} "${WWW_ROOT}"
     fi
 else
     DIR_HOME="/root"
 fi
-if [ "${nopass_Yn}" = "y" ]; then
+if ${_nopass}; then
     # Disable password authentication
     sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" /etc/ssh/sshd_config
     sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config
@@ -824,7 +823,7 @@ if [ "${nopass_Yn}" = "y" ]; then
     read -p "Please paste your public key here: " SSH_USER_PUBKEY
     echo ${SSH_USER_PUBKEY} > "${DIR_HOME}"/.ssh/authorized_keys
 fi
-chown -R ${SSH_USER}:sudo "${DIR_HOME}"
+chown -R ${_ssh_user}:sudo "${DIR_HOME}"
 # https://infosec-handbook.eu/blog/wss1-basic-hardening/#s3
 echo "" >> /etc/ssh/sshd_config
 sed -i '/^KexAlgorithms /d' /etc/ssh/sshd_config
@@ -842,7 +841,7 @@ ssh-keygen -A
 # configure fail2ban for sshd
 header "Configuring SSH fail2ban jail"
 SSH_MAXRETRY=4
-if [ "${nopass_Yn}" = "y" ]; then
+if ${_nopass}; then
     # lower the tolerance for failed attempts if no password is used
     SSH_MAXRETRY=2
 fi
@@ -850,7 +849,7 @@ cat >> /etc/fail2ban/jail.local << EOF
 [sshd]
 enabled = true
 mode = aggressive
-port = ${PORT_SSH}
+port = ${_ssh_port}
 filter = sshd
 maxretry = ${SSH_MAXRETRY}
 logpath = %(sshd_log)s
@@ -860,7 +859,7 @@ EOF
 iptables -F
 
 # if SSH uses port other than 22, add a honeypot
-if [ ! "${PORT_SSH}" = "22" ]; then
+if [ ! "${_ssh_port}" = "22" ]; then
     header "Configuring SSH fail2ban honeypot"
     HP_PREF="sshd-honeypot"
     iptables -A INPUT -p tcp  --dport 22 -j LOG --log-prefix="${HP_PREF} "
@@ -886,14 +885,14 @@ EOF
 fi;
 
 # configure iptables with whitelisted IP addresses, if any
-if [ -n "${WHTLST_IPS}" ]; then
+if [ -n "${_whitelisted_ips}" ]; then
     # and if at least one port is configured
-    if [ -n "${PORT_SSH}" ] || [ -n "${PORT_FTP}" ] || [ -n "${PORT_MYSQL}" ]; then
+    if [ -n "${_ssh_port}" ] || [ -n "${_ftp_port}" ] || [ -n "${_mysql_port}" ]; then
         header "Trusting whitelisted IP addresses"
         # trust the provided IPs
-        sh ${HOSTMANAGER_PATH} trust "${WHTLST_IPS}"
+        sh ${HOSTMANAGER_PATH} trust "${_whitelisted_ips}"
         # block everyone else
-        WHTLST_PORTS="${PORT_SSH} ${PORT_FTP} ${PORT_MYSQL}"
+        WHTLST_PORTS="${_ssh_port} ${_ftp_port} ${_mysql_port}"
         for PORT in ${WHTLST_PORTS}; do
             # only if the port number is not empty and greater than zero
             if [ -n "${PORT}" ] && [ "${PORT}" -gt 0 ]; then
@@ -922,7 +921,7 @@ header "Self-destruct"
 rm $0
 
 echo "**** All done."
-echo "**** Reminder: the new SSH port is: ${PORT_SSH}"
+echo "**** Reminder: the new SSH port is: ${_ssh_port}"
 echo "     (make sure to allow it with your AWS/GCP/etc. firewall)"
 echo "**** The server will reboot."
 
@@ -934,8 +933,8 @@ case "$1" in
         install
         ;;
     *)
-        read -p "Using this is your own risk and responsibility. [Y/n]: " inststart
-        if [ "${inststart}" != "N" ] && [ "${inststart}" != "n" ]; then
+        input "start" "Using this is your own risk and responsibility" true
+        if ${_start}; then
             do_install screen
             BIN_SCREEN=$(which screen)
             if [ -z "${BIN_SCREEN}" ]; then
