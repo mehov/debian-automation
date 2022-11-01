@@ -132,14 +132,15 @@ header() {
 }
 
 prompt_server_ip() {
-    read -p "The IP address of this server [resolve with OpenDNS]: " SERVER_IP
-    if [ "_${SERVER_IP}" = "_" ]; then
-        echo "Resolving the server IP address using myip.opendns.com"
-        SERVER_IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+    RESOLVED_IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+    input "server_ip" "The IP address of this server" "${RESOLVED_IP}"
+    if [ "_${_server_ip}" = "_" ]; then
+        echo "Please provide a valid IP address."
+        prompt_server_ip
     fi
-    ping -c 1 "${SERVER_IP}"
+    ping -c 1 "${_server_ip}"
     if [ "$?" -gt "0" ]; then
-        echo "${SERVER_IP} is not connectable."
+        echo "${_server_ip} is not connectable."
         prompt_server_ip
     fi
 }
@@ -152,11 +153,8 @@ install() {
     report_append "WWW_ROOT" $WWW_ROOT
     # make sure we know the IP address of this server
     do_install dnsutils
-    SERVER_IP=$(hostname -i)
-    if [ "$?" -gt "0" ]; then
-        prompt_server_ip
-    fi
-    grep -qF "${SERVER_IP}" /etc/hosts || echo "${SERVER_IP} $(hostname)" >> /etc/hosts
+    prompt_server_ip
+    grep -qF "${_server_ip}" /etc/hosts || echo "${_server_ip} $(hostname)" >> /etc/hosts
 
     echo ""
     echo "Receive security notifications and alerts (SSH, fail2ban)?"
@@ -701,7 +699,7 @@ if ${_mysql}; then
     header "Configuring MySQL"
     sed -i "s/^#port/port/g" /etc/mysql/mariadb.conf.d/50-server.cnf
     sed -i "s/= 3306/= ${_mysql_port}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
-    sed -i "s/= 127.0.0.1/= ${SERVER_IP}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
+    sed -i "s/= 127.0.0.1/= ${_server_ip}/g" /etc/mysql/mariadb.conf.d/50-server.cnf
     service mysql start
     mysqladmin -u root password "${MYSQL_ROOT_PASS}"
     mysql -uroot -p${MYSQL_ROOT_PASS} -e "CREATE USER '${MYSQL_REMO_USER}'@'%' IDENTIFIED BY '${MYSQL_REMO_PASS}';"
