@@ -24,6 +24,9 @@ input() { # try taking required variable from flags/arguments, else prompt
     if [ "${DEFAULT}" = true ] || [ "${DEFAULT}" = false ]; then
         IS_YN=true
     fi
+    ARG="" # clean up
+    KEY="" # clean up
+    KEY_LENGTH="" # clean up
     VALUE="" # clean up
     for ARG in ${ARGS}; do # loop through flags/arguments passed to the script
         KEY=$(echo ${ARG} | cut -f1 -d=) # parse --KEY out of --KEY=VALUE
