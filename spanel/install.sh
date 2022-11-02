@@ -914,7 +914,7 @@ reboot
 
 case "$1" in
     install)
-        install
+        install ${@}
         ;;
     *)
         input "start" "Using this is your own risk and responsibility" true
@@ -925,7 +925,7 @@ case "$1" in
                 echo "Screen is required but not installed"
                 exit
             fi
-            "${BIN_SCREEN}" -S "spanel" bash "${0}" install
+            "${BIN_SCREEN}" -S "spanel" bash "${0}" install ${@}
         else
             echo "Aborted."
         fi
