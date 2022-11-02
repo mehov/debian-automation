@@ -20,6 +20,10 @@ input() { # try taking required variable from flags/arguments, else prompt
     NAME="${1}" # shorthand to the name of requested variable
     PROMPT="${2}" # shorthand to the prompt text
     DEFAULT="${3}" # shorthand to the default value
+    if ${_noninteractive}; then
+        VALUE="${DEFAULT}"
+        PROMPT=""
+    fi
     IS_YN=false # determine whether prompt expects a yes or no answer
     if [ "${DEFAULT}" = true ] || [ "${DEFAULT}" = false ]; then
         IS_YN=true
@@ -158,6 +162,7 @@ install() {
     SESSION_ID=$(random_string -l 4)
     # start the config
     report_append "WWW_ROOT" $WWW_ROOT
+    input "noninteractive" "" false # never prompt; false by default, true if passed
     # make sure we know the IP address of this server
     do_install dnsutils
     prompt_server_ip
