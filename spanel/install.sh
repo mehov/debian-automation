@@ -32,11 +32,16 @@ input() { # try taking required variable from flags/arguments, else prompt
         fi
         KEY_LENGTH=${#KEY}
         VALUE="${ARG:$KEY_LENGTH+1}" # parse VALUE out of --KEY=VALUE
-        if "${IS_YN}" && [ -z "${VALUE}" ]; then
-            VALUE=true # consider a flag provided with no value as a yes
+        if [ -z "${VALUE}" ]; then # this flag has been provided with no value
+            if "${IS_YN}"; then
+                VALUE=true # for booleans, consider no value as a yes
+            else
+                VALUE="${DEFAULT}" # otherwise, use whatever is the default
+                PROMPT="" # emptying prompt makes sure it's not shown
+            fi
         fi
     done
-    if [ -z "${VALUE}" ]; then # if variable was not found in arguments, prompt
+    if [ -n "${PROMPT}" ] && [ -z "${VALUE}" ]; then # if variable was not found in arguments, prompt
         PROMPT_DEFAULT="${DEFAULT}" # displayed default value
         if "${IS_YN}"; then # if expecting boolean, format the prompt as Y/N
             if "${DEFAULT}"; then
