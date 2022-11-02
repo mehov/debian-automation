@@ -25,7 +25,7 @@ input() { # try taking required variable from flags/arguments, else prompt
         IS_YN=true
     fi
     VALUE="" # clean up
-    for ARG in "${ARGS}"; do # loop through flags/arguments passed to the script
+    for ARG in ${ARGS}; do # loop through flags/arguments passed to the script
         KEY=$(echo ${ARG} | cut -f1 -d=) # parse --KEY out of --KEY=VALUE
         if [ "${KEY}" != "--${NAME}" ]; then # skip keys that don't match
             continue
