@@ -817,7 +817,7 @@ if ${_nopass}; then
     sed -i "s/PubkeyAuthentication no/PubkeyAuthentication yes/g" /etc/ssh/sshd_config
     mkdir -p "${DIR_HOME}/.ssh"
     read -p "Please paste your public key here: " SSH_USER_PUBKEY
-    echo ${SSH_USER_PUBKEY} > "${DIR_HOME}"/.ssh/authorized_keys
+    echo ${SSH_USER_PUBKEY} >> "${DIR_HOME}"/.ssh/authorized_keys
 fi
 chown -R ${_ssh_user}:sudo "${DIR_HOME}"
 # https://infosec-handbook.eu/blog/wss1-basic-hardening/#s3
