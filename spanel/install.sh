@@ -36,6 +36,7 @@ input() { # try taking required variable from flags/arguments, else prompt
         KEY_LENGTH=${#KEY}
         VALUE="${ARG:$KEY_LENGTH+1}" # parse VALUE out of --KEY=VALUE
         if [ -z "${VALUE}" ]; then # this flag has been provided with no value
+            header "Received ${KEY}: ${VALUE}"
             if "${IS_YN}"; then
                 VALUE=true # for booleans, consider no value as a yes
             else
@@ -57,8 +58,6 @@ input() { # try taking required variable from flags/arguments, else prompt
             PROMPT_DEFAULT=" [${PROMPT_DEFAULT}]"
         fi
         read -p "${PROMPT}${PROMPT_DEFAULT}: " "VALUE" # finally, prompt
-    else
-        header "Received ${KEY}: ${VALUE}"
     fi
     if [ -z "${VALUE}" ]; then # if still empty after prompt, revert to default
         VALUE="${DEFAULT}"
