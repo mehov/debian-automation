@@ -141,6 +141,14 @@ nginx_vhost_conf_name() {
 }
 add() {
     HOST=$1
+    conf_file_name=`nginx_vhost_conf_name ${HOST}`
+    if [ -f "${sites_available}/${conf_file_name}" ]; then
+        input "force" "Host ${HOST} exists on this system. Continue?" false
+        if ! ${_force}; then
+            header "Host ${HOST} exists on this system. Aborting"
+            return 0
+        fi
+    fi
     # Aliases
     input "aliases" "Enter alias (leave blank to skip)"
     if ! ${_noninteractive} && [ -n "${_aliases}" ]; then
@@ -224,7 +232,6 @@ try_files \$uri \$uri/ /index.php?\$args;
     if [ -n "$(ini_get FTP_PORT)" ] && ${_user}; then
         echo "# FTP $(ini_get FTP_PORT) ${_user_name}:${_user_password}" >> ${ngaccess_file}
     fi
-    conf_file_name=`nginx_vhost_conf_name ${HOST}`
     if [ -f "${sites_available}/${conf_file_name}" ]; then
         rm "${sites_available}/${conf_file_name}"
     fi
