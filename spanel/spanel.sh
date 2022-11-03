@@ -119,7 +119,7 @@ random_string() {
 }
 restart_nginx() {
     if [ -e /var/run/nginx.pid ]; then
-        command='restart'
+        command='reload'
     else
         command='start'
     fi
