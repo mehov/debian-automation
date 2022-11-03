@@ -6,6 +6,10 @@ if [ "$(whoami)" != 'root' ]; then
     exit 1;
 fi
 
+header() {
+    printf "\n\n"
+    echo "**** [$(date +%T.%N%z)] ${1}"
+}
 ARGS="$@"
 input() { # try taking required variable from flags/arguments, else prompt
     NAME="${1}" # shorthand to the name of requested variable
