@@ -59,7 +59,9 @@ restart_nginx() {
     service nginx $command
 }
 add_alias() {
-    aliases=$aliases" "$1
+    if [ -n "$1" ]; then
+        _aliases=${_aliases}" "$1
+    fi
     read -p "Enter another alias (leave blank to skip): " newalias
     if [ "$newalias" != "" ]; then
         ### loop
