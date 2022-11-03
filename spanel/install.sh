@@ -3,7 +3,6 @@
 ##todo http://serverfault.com/questions/172831/sending-email-from-my-server#comment150117_172834
 
 
-ARGS="$@"
 PORT_SSH_DEFAULT=$(date -u "+%N" | cut -c 7,8)
 PORT_SSH_DEFAULT="220${PORT_SSH_DEFAULT}"
 PORT_FTP_DEFAULT=$(date -u "+%N" | cut -c 6,7)
@@ -16,6 +15,7 @@ HOSTMANAGER_PATH="/root/spanel.sh"
 SSH_CLIENT_IP=$(who -m --ips | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
 
 # reusable functions
+ARGS="$@"
 input() { # try taking required variable from flags/arguments, else prompt
     NAME="${1}" # shorthand to the name of requested variable
     PROMPT="${2}" # shorthand to the prompt text
