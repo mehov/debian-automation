@@ -6,6 +6,69 @@ if [ "$(whoami)" != 'root' ]; then
     exit 1;
 fi
 
+ARGS="$@"
+input() { # try taking required variable from flags/arguments, else prompt
+    NAME="${1}" # shorthand to the name of requested variable
+    PROMPT="${2}" # shorthand to the prompt text
+    DEFAULT="${3}" # shorthand to the default value
+    if ${_noninteractive}; then
+        VALUE="${DEFAULT}"
+        PROMPT=""
+    fi
+    IS_YN=false # determine whether prompt expects a yes or no answer
+    if [ "${DEFAULT}" = true ] || [ "${DEFAULT}" = false ]; then
+        IS_YN=true
+    fi
+    ARG="" # clean up
+    KEY="" # clean up
+    KEY_LENGTH="" # clean up
+    VALUE="" # clean up
+    for ARG in ${ARGS}; do # loop through flags/arguments passed to the script
+        KEY=$(echo ${ARG} | cut -f1 -d=) # parse --KEY out of --KEY=VALUE
+        if [ "${KEY}" != "--${NAME}" ]; then # skip keys that don't match
+            continue
+        fi
+        KEY_LENGTH=${#KEY}
+        VALUE="${ARG:$KEY_LENGTH+1}" # parse VALUE out of --KEY=VALUE
+        if [ -z "${VALUE}" ]; then # this flag has been provided with no value
+            header "Received ${KEY}: ${VALUE}"
+            if "${IS_YN}"; then
+                VALUE=true # for booleans, consider no value as a yes
+            else
+                VALUE="${DEFAULT}" # otherwise, use whatever is the default
+                PROMPT="" # emptying prompt makes sure it's not shown
+            fi
+        fi
+    done
+    if [ -n "${PROMPT}" ] && [ -z "${VALUE}" ]; then # if variable was not found in arguments, prompt
+        PROMPT_DEFAULT="${DEFAULT}" # displayed default value
+        if "${IS_YN}"; then # if expecting boolean, format the prompt as Y/N
+            if "${DEFAULT}"; then
+                PROMPT_DEFAULT="Y/n"
+            else
+                PROMPT_DEFAULT="y/N"
+            fi
+        fi
+        if [ ! -z "${PROMPT_DEFAULT}" ]; then
+            PROMPT_DEFAULT=" [${PROMPT_DEFAULT}]"
+        fi
+        read -p "${PROMPT}${PROMPT_DEFAULT}: " "VALUE" # finally, prompt
+    fi
+    if [ -z "${VALUE}" ]; then # if still empty after prompt, revert to default
+        VALUE="${DEFAULT}"
+    fi
+    if "${IS_YN}"; then # if expecting boolean, convert the value we have
+        if [ "${VALUE}" = "Y" ] || [ "${VALUE}" = "y" ]; then
+            VALUE=true
+        fi
+        if [ "${VALUE}" = "N" ] || [ "${VALUE}" = "n" ]; then
+            VALUE=false
+        fi
+    fi
+    printf -v "_${NAME}" "%s" "${VALUE}" # stackoverflow.com/a/55331060
+}
+input "noninteractive" "" false # never prompt; false by default, true if passed
+
 ini_get() {
     PATH_INI="/root/.bonjour.ini"
     if ! grep -q "^${1}=" "${PATH_INI}"; then
@@ -72,22 +135,105 @@ add_alias() {
 nginx_vhost_conf_name() {
     echo "vhost-${1}.conf"
 }
-create_nginx_host() {
-    # $1=hostname; $2=aliases; $3=public_dir; $4=config_dir; $5=certbot_path_opt
-    conf_file_name=`nginx_vhost_conf_name ${1}`
+add() {
+    HOST=$1
+    # Aliases
+    input "aliases" "Enter alias (leave blank to skip)"
+    if ! ${_noninteractive} && [ -n "${_aliases}" ]; then
+        add_alias
+    fi
+    # Letsencrypt
+    LE_PROMPT="\n"
+    LE_PROMPT=${LE_PROMPT}"You can get a free SSL/TLS certificate from Let's Encrypt.\n"
+    LE_PROMPT=${LE_PROMPT}"Warning: your domain will be listed in public "
+    LE_PROMPT=${LE_PROMPT}"certificate transparency logs, such as:\n\n"
+    LE_PROMPT=${LE_PROMPT}"- https://transparencyreport.google.com/https/certificates\n"
+    LE_PROMPT=${LE_PROMPT}"- https://crt.sh\n\n"
+    LE_PROMPT=${LE_PROMPT}"Use Let's Encrypt?"
+    input "letsencrypt" "$(echo -e $LE_PROMPT)" true
+    # Site path
+    input "dir" "Enter site directory path" "$(ini_get WWW_ROOT)/$HOST"
+    input "dir_public" "" "${_dir}"
+    # MySQL
+    database_name_random=`echo $1 | sed -e 's/\W//g'`;
+    database_user_random=`random_string -l 16`
+    database_password_waitforit_random=`random_string -l 16`
+    if [ -n "$(ini_get MYSQL_PORT)" ]; then
+        input "database" "Create MySQL database?" true
+        if ${_database}; then
+            input "database_name" "Enter MySQL database name" $database_name_random
+            input "database_user" "Enter MySQL user" $database_user_random
+            input "database_password" "Enter MySQL password for '${_database_user}'" $database_password_waitforit_random
+        fi
+    fi
+    # FTP
+    if [ -n "$(ini_get FTP_PORT)" ]; then
+        input "user" "Create a separate FTP/UNIX user?" false
+        if ${_user}; then
+            secondlvldomain=`echo $HOST | cut -d "." -f 1`
+            input "user_name" "FTP/UNIX user" "www-usr-${secondlvldomain}"
+            input "user_password" "Password for '${_user_name}'" `random_string -l 16`
+            cppassword=$(perl -e 'print crypt($ARGV[0], "password")' ${_user_password})
+            if id -u ${_user_name} >/dev/null 2>&1; then
+                pkill -u ${_user_name}
+                killall -9 -u ${_user_name}
+                usermod --password=${cppassword} --home="${_dir}" ${_user_name}
+            else
+                useradd -d "${_dir}" -p ${cppassword} -g www-data -s /bin/sh -M ${_user_name}
+            fi
+        fi
+    fi
+    # Adding
+    echo ""
+    echo "ADDING VIRTUALHOST $1"
+    echo -n "Web root... "
+    if ! [ -d ${_dir} ]; then
+        mkdir ${_dir}
+    fi
+    if [ -d ${_dir} ]; then
+        echo ${_dir}" OK"
+    else
+        echo "ERROR: "${_dir}" could not be created."
+        exit
+    fi
+    if [ -n "${_dir_public}" ] && ! [ -d ${_dir_public} ]; then
+        mkdir -p "${_dir_public}"
+    fi
+    ngaccess_file="${_dir}/.ngaccess"
+    echo -n ".ngaccess file... "
+    if ! [ -f $ngaccess_file ]; then
+        if ! touch $ngaccess_file; then
+            echo "ERROR (creating)."
+        else
+            if ! echo "#this is the part of the main nginx config
+location / {
+try_files \$uri \$uri/ /index.php?\$args;
+}" > $ngaccess_file; then
+                echo "ERROR (writing)."
+            else
+                echo "done."
+            fi
+        fi
+    else
+        echo "exists."
+    fi
+    if [ -n "$(ini_get FTP_PORT)" ] && ${_user}; then
+        echo "# FTP $(ini_get FTP_PORT) ${_user_name}:${_user_password}" >> ${ngaccess_file}
+    fi
+    conf_file_name=`nginx_vhost_conf_name ${HOST}`
     if [ -f "${sites_available}/${conf_file_name}" ]; then
         rm "${sites_available}/${conf_file_name}"
     fi
-    if [ ! -z "${2}" ]; then
+    if [ ! -z "${_aliases}" ]; then
 cat >> "${sites_available}/${conf_file_name}" << EOF
 server {
 listen 80;
-server_name $2;
-access_log /var/log/nginx/$1-aliases.access.log;
-error_log /var/log/nginx/$1-aliases.error.log;
+server_name ${_aliases};
+access_log /var/log/nginx/${HOST}-aliases.access.log;
+error_log /var/log/nginx/${HOST}-aliases.error.log;
 include snippets/vhost-letsencrypt.conf;
 location / {
-    return 301 http://$1\$request_uri;
+    return 301 http://${HOST}\$request_uri;
 }
 }
 EOF
@@ -95,10 +241,10 @@ fi
 cat >> "${sites_available}/${conf_file_name}" << EOF
     server {
         listen 80;
-        server_name $1;
-        access_log /var/log/nginx/$1.access.log;
-        error_log /var/log/nginx/$1.error.log;
-        root $3; # config_path $4
+        server_name ${HOST};
+        access_log /var/log/nginx/${HOST}.access.log;
+        error_log /var/log/nginx/${HOST}.error.log;
+        root ${_dir_public}; # config_path ${_dir}
         include snippets/vhost-letsencrypt.conf;
         include snippets/vhost-common.conf;
     }
@@ -106,19 +252,19 @@ EOF
     if ! [ -f "${sites_enabled}/${conf_file_name}" ]; then
         ln -s "${sites_available}/${conf_file_name}" "${sites_enabled}/${conf_file_name}"
     fi
-    if [ ! "$5" = "" ] && [ -f "$5" ]; then
+    if ${_letsencrypt} && [ -n "${CERTBOT_PATH}" ] && [ -f "${CERTBOT_PATH}" ]; then
         restart_nginx # restart so the host goes live and is verifiable
-        domains="$1"
-        for alias in $2; do
+        domains="${HOST}"
+        for alias in ${_aliases}; do
             domains="${domains},${alias}"
         done
-        letsencrypt_email="webmaster@$1"
+        letsencrypt_email="webmaster@${HOST}"
         printf "Requesting a certificate from Let's Encrypt:\n"
         printf " - email:   ${letsencrypt_email}\n"
         printf " - webroot: ${LETSENCRYPT_ROOT}\n"
         printf " - domains: ${domains}\n"
-        $5 certonly --non-interactive --agree-tos --email "${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "${domains}"
-        if [ ! -r "/etc/letsencrypt/live/$1/fullchain.pem" ]; then
+        "${CERTBOT_PATH}" certonly --non-interactive --agree-tos --email "${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "${domains}"
+        if [ ! -r "/etc/letsencrypt/live/${HOST}/fullchain.pem" ]; then
             echo "Can't find the certificate file. Aborting."
             if [ -f "${sites_available}/${conf_file_name}" ]; then
                 rm "${sites_available}/${conf_file_name}"
@@ -138,13 +284,13 @@ EOF
         }
     }
 EOF
-if [ ! -z "${2}" ]; then
+if [ ! -z "${_aliases}" ]; then
     cat >> "${sites_available}/${conf_file_name}" << EOF
     server {
         listen 443 ssl http2;
-        server_name $2;
-        ssl_certificate /etc/letsencrypt/live/$1/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
+        server_name ${_aliases};
+        ssl_certificate /etc/letsencrypt/live/${HOST}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${HOST}/privkey.pem;
         ssl_dhparam /etc/nginx/dhparam.pem;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
         ssl_prefer_server_ciphers on;
@@ -155,7 +301,7 @@ if [ ! -z "${2}" ]; then
         ssl_stapling_verify on;
         add_header Strict-Transport-Security max-age=15768000;
         location / {
-            return 301 https://$1\$request_uri;
+            return 301 https://${HOST}\$request_uri;
         }
     }
 EOF
@@ -163,14 +309,14 @@ fi
 cat >> "${sites_available}/${conf_file_name}" << EOF
     server {
         listen 443 ssl http2;
-        server_name $1;
-        access_log /var/log/nginx/$1.access.log;
-        error_log /var/log/nginx/$1.error.log;
-        root $3;
-        include "$4/.ngaccess";
+        server_name ${HOST};
+        access_log /var/log/nginx/${HOST}.access.log;
+        error_log /var/log/nginx/${HOST}.error.log;
+        root ${_dir_public};
+        include "${_dir}/.ngaccess";
         include snippets/vhost-common.conf;
-        ssl_certificate /etc/letsencrypt/live/$1/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/$1/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/${HOST}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${HOST}/privkey.pem;
         ssl_dhparam /etc/nginx/dhparam.pem;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
         ssl_prefer_server_ciphers on;
@@ -184,163 +330,17 @@ cat >> "${sites_available}/${conf_file_name}" << EOF
 EOF
         restart_nginx 
     fi
-}
-add() {
-    echo ""
-    printf "You can get a free SSL/TLS certificate from Let's Encrypt. "
-    printf "Warning: your domain will be listed in public "
-    printf "certificate transparency logs, such as: \n"
-    echo "- https://transparencyreport.google.com/https/certificates"
-    echo "- https://crt.sh"
-    echo ""
-    read -p "Use Let's Encrypt? [Y/n]: " SSL_Yn
-    CERTBOT_PATH_OPT=""
-    if [ "${SSL_Yn}" = "" ] || [ "${SSL_Yn}" = "Y" ] || [ "${SSL_Yn}" = "y" ]; then
-        CERTBOT_PATH_OPT="${CERTBOT_PATH}"
-    fi
-    public_dir_name_default="public_html"
-    database_name_random=`echo $1 | sed -e 's/\W//g'`;
-    database_user_random=`random_string -l 16`
-    database_password_waitforit_random=`random_string -l 16`
-    if [ -z "${4}" ]; then
-        read -p "Enter alias (leave blank to skip): " alias
-        if [ "$alias" != "" ] && [ "$alias" != "n" ] && [ "$alias" != "N" ]; then
-            add_alias $alias
-        fi
-    else
-        if [ "${4}" != "N" ] && [ "${4}" != "n" ]; then
-            aliases="${aliases} ${4}"
-        fi
-    fi
-    if [ -z $2 ]; then
-        site_dir=$www_root
-        read -p "Enter site directory NAME ($site_dir/[> $1 <]): " site_dir_name
-        if [ "$site_dir_name" = "" ]; then
-            site_dir_name=$1
-        fi
-    else
-        site_dir=$www_root
-        site_dir_name=$2
-    fi
-
-    site_dir=$site_dir"/"$site_dir_name
-    #read -p "Create \"public_html\" subdir (i.e. "$site_dir"/"$public_dir_name_default")? [y/N]: " create_public_dir
-    create_public_dir="N"
-
-    MYSQL_PORT=$(ini_get "MYSQL_PORT")
-    if [ -z "${MYSQL_PORT}" ]; then
-        create_database="n"
-    elif [ -z $3 ]; then
-        read -p "Create MySQL database? [Y/n]: " create_database
-        if [ "$create_database" != "n" ] && [ "$create_database"!="N" ]; then
-        read -p "Enter MySQL database name [$database_name_random]: " database_name
-            if [ "$database_name" = "" ]; then
-                database_name=$database_name_random
-            fi
-            read -p "Enter MySQL user [$database_user_random]: " database_user
-            if [ "$database_user" = "" ]; then
-                database_user=$database_user_random
-            fi
-            read -p "Enter MySQL password [$database_password_waitforit_random]: " database_password
-            if [ "$database_password" = "" ]; then
-                database_password=$database_password_waitforit_random
-            fi
-        fi
-    else
-        if [ $3 = "N" ] || [ $3 = "n" ]; then
-            create_database="n"
-        else
-            create_database="y"
-            database_name=$database_name_random
-            database_user=$database_user_random
-            database_password=$database_password_waitforit_random
-        fi
-    fi
-
-    FTP_PORT=$(ini_get "FTP_PORT")
-    if [ -n "${FTP_PORT}" ]; then
-        read -p "Create a separate FTP/UNIX user? [Y/n]: " create_user
-    else
-        create_user="n"
-    fi
-    if [ "${create_user}" != "n" ] && [ "${create_user}"!="N" ]; then
-        secondlvldomain=`echo $1 | cut -d "." -f 1`
-        website_user_default="www-usr-${secondlvldomain}"
-        read -p "FTP/UNIX user [${website_user_default}]: " website_user
-        if [ "u${website_user}" = "u" ]; then
-            website_user=${website_user_default}
-        fi
-        wdpasswordg=`random_string -l 16`
-        read -p "Enter a new password for user '${website_user}' [${wdpasswordg}]: " wdpassword
-        if [ "$wdpassword" = "" ]; then
-            wdpassword="${wdpasswordg}"
-        fi
-        cppassword=$(perl -e 'print crypt($ARGV[0], "password")' $wdpassword)
-        if id -u ${website_user} >/dev/null 2>&1; then
-            pkill -u ${website_user}
-            killall -9 -u ${website_user}
-            usermod --password=${cppassword} --home="${site_dir}" ${website_user}
-        else
-            useradd -d "${site_dir}" -p ${cppassword} -g www-data -s /bin/sh -M ${website_user}
-        fi
-        ftp_user="${website_user}"
-    fi
-
-    echo ""
-    echo "ADDING VIRTUALHOST $1"
-    echo -n "Web root... "
-    if ! [ -d $site_dir ]; then
-        mkdir $site_dir
-    fi
-    if ! [ -d $site_dir ]; then
-        echo "ERROR: "$site_dir" could not be created."
-    else
-        echo $site_dir" OK"
-        if [ "$create_public_dir" = "y" ] || [ "$create_public_dir" = "Y" ];then
-            public_dir=$site_dir"/"$public_dir_name_default
-            mkdir $public_dir
-        else
-            public_dir=$site_dir
-        fi
-    fi
-    ngaccess_file="${site_dir}/.ngaccess"
-    echo -n ".ngaccess file... "
-    if ! [ -f $ngaccess_file ]; then
-        if ! touch $ngaccess_file; then
-            echo "ERROR (creating)."
-        else
-            if ! echo "#this is the part of the main nginx config
-location / {
-try_files \$uri \$uri/ /index.php?\$args;
-}" > $ngaccess_file; then
-                echo "ERROR (writing)."
-            else
-                echo "done."
-            fi
-        fi
-    else
-        echo "exists."
-    fi
-    if [ -n "${FTP_PORT}" ]; then
-        echo "# FTP p:${FTP_PORT} u:${website_user} p:${wdpassword}" >> ${ngaccess_file}
-    fi
-    create_nginx_host "$1" "${aliases}" "${public_dir}" "${site_dir}" "${CERTBOT_PATH_OPT}"
-    #for alias in $aliases; do
-    #    create_nginx_host $alias ${public_dir} ${site_dir} ${CERTBOT_PATH_OPT}
-    #done
-
-    ### MySQL
-    if [ "$create_database" != "n" ] && [ "$create_database"!="N" ]; then
-        $mysql -uroot -p$mysql_password -e "CREATE DATABASE \`$database_name\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-        $mysql -uroot -p$mysql_password -e "GRANT CREATE,SELECT,INSERT,UPDATE,DELETE ON $database_name.* TO $database_user@localhost IDENTIFIED BY '$database_password';"
-        $mysql -uroot -p$mysql_password -e "GRANT ALL ON $database_name.* TO $mysql_admin@localhost IDENTIFIED BY '$mysql_admin_password';"
-        printf "Database:\n-name: $database_name\n-user: $database_user\n-pass: $database_password\n"
+    if [ -n "$(ini_get MYSQL_PORT)" ] && ${_database}; then
+        $mysql -uroot -p$mysql_password -e "CREATE DATABASE \`${_database_name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+        $mysql -uroot -p$mysql_password -e "GRANT CREATE,SELECT,INSERT,UPDATE,DELETE ON \`${_database_name}\`.* TO ${_database_user}@localhost IDENTIFIED BY '${_database_password}';"
+        $mysql -uroot -p$mysql_password -e "GRANT ALL ON \`${_database_name}\`.* TO $mysql_admin@localhost IDENTIFIED BY '$mysql_admin_password';"
+        printf "Database:\n-name: ${_database_name}\n-user: ${_database_user}\n-pass: ${_database_password}\n"
         echo -n "Config file... "
-        config_file=$site_dir"/config_spanel.php"
+        config_file=${_dir}"/config_spanel.php"
         if ! touch $config_file; then
             echo "ERROR (creating)."
         else
-            if ! printf "<?php\n\$mysql=array();\n\$mysql['host']='localhost';\n\$mysql['name']='$database_name';\n\$mysql['user']='$database_user';\n\$mysql['pass']='$database_password';\n" > $config_file; then
+            if ! printf "<?php\n\$mysql=array();\n\$mysql['host']='localhost';\n\$mysql['name']='${_database_name}';\n\$mysql['user']='${_database_user}';\n\$mysql['pass']='${_database_password}';\n" > $config_file; then
                 echo "ERROR (writing)."
             else
                 echo "done."
