@@ -184,20 +184,6 @@ EOF
     fi
 }
 add() {
-    # if this is a www. domain, suggest adding a root domain
-    if [ "www." = $(echo "$1" | cut -c -4) ]; then
-        ROOT_DOMAIN=$(echo "$1" | cut -c 5-)
-        read -p "Add ${ROOT_DOMAIN}? [Y/n]: " RTD_Yn
-        if [ "${RTD_Yn}" = "" ] || [ "${RTD_Yn}" = "Y" ] || [ "${RTD_Yn}" = "y" ]; then
-            aliases="${ROOT_DOMAIN}"
-        fi
-    # otherwise suggest adding a www.
-    else
-        read -p "Add www.$1? [Y/n]: " WWW_Yn
-        if [ "${WWW_Yn}" = "" ] || [ "${WWW_Yn}" = "Y" ] || [ "${WWW_Yn}" = "y" ]; then
-            aliases="www.$1"
-        fi
-    fi
     echo ""
     printf "You can get a free SSL/TLS certificate from Let's Encrypt. "
     printf "Warning: your domain will be listed in public "
