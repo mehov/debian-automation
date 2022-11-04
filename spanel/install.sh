@@ -84,33 +84,10 @@ random_string() {
         fi
     echo `cat /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w $length | head -1`
 }
-is_installed2() {
-    local PKG="$1"
-    PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $PKG|grep "install ok installed")
-    echo $PKG_OK
-    if [ "" = $PKG_OK ]; then
-        echo "No somelib. Setting up $PKG."
-    fi
-}
-
-is_installed() {
-    if [ -z "`which "$1" 2>/dev/null`" ]
-    then
-        return 0
-    else
-        return 1
-    fi
-}
-
 do_install() {
-    is_installed $1
-    RES=$?
-    if [ "0" = $RES ]; then
-        header "Installing ${1}"
-        DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" $1
-    fi
+    header "Installing ${1}"
+    DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" $1
 }
-
 do_uninstall() {
     if [ "$#" = 2 ]; then
         if [ "1" = "$2" ]; then
@@ -122,15 +99,9 @@ do_uninstall() {
     if [ "$#" = 1 ]; then
         DEL="$1*"
     fi
-    is_installed $1
-    RES=$?
-    if [ "1" = $RES ]; then
-        header "Purging ${1}"
-        service $1 stop
-        apt-get purge -y $DEL
-    fi
+    header "Purging ${DEL}"
+    apt-get purge -y $DEL
 }
-
 report_append()  {
     echo "$1=$2" >> ~/.bonjour.ini
 }
