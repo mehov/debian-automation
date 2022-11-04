@@ -273,6 +273,7 @@ install() {
     #build-essentials = c++
 
     header "Deleting pre-installed packages"
+    do_uninstall man-db
     do_uninstall exim4
     do_uninstall nginx 1
     do_uninstall apache2
