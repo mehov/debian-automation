@@ -127,7 +127,7 @@ do_uninstall() {
     if [ "1" = $RES ]; then
         header "Purging ${1}"
         service $1 stop
-        apt-get purge -s -y $DEL
+        apt-get purge -y $DEL
     fi
 }
 
