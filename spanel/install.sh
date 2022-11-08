@@ -746,6 +746,13 @@ if ${_certbot}; then
 fi
 
 header "Configuring SSH"
+# create root SSH key if needed
+if [ ! -d "$HOME/.ssh" ]; then
+    mkdir -p "$HOME/.ssh"
+fi
+if [ ! -f "$HOME/.ssh/id_rsa" ]; then
+    ssh-keygen -b 8192 -t rsa -q -f "$HOME/.ssh/id_rsa" -N ""
+fi
 # stop accepting client environment variables
 sed -i "s/^AcceptEnv/#AcceptEnv/g" /etc/ssh/sshd_config
 # Update the SSH port
@@ -772,6 +779,13 @@ if ${_noroot}; then
     useradd -s /bin/bash -md "${DIR_HOME}" -g sudo ${_ssh_user}
     # Also add to the group "www-data"
     usermod -a -G www-data ${_ssh_user}
+    # Create SSH keys for ${_ssh_user}
+    if [ ! -d "${DIR_HOME}/.ssh" ]; then
+        mkdir -p "${DIR_HOME}/.ssh"
+    fi
+    if [ ! -f "${DIR_HOME}/.ssh/id_rsa" ]; then
+        ssh-keygen -b 8192 -t rsa -q -f "${DIR_HOME}/.ssh/id_rsa" -N "" -C "${_ssh_user}"
+    fi
     # Finally, make this user a sudoer too
     echo "${_ssh_user} ALL=(ALL) NOPASSWD: ALL" | (su -c "EDITOR='tee' visudo -f /etc/sudoers.d/${_ssh_user}")
     if [ -d "${WWW_ROOT}" ]; then
