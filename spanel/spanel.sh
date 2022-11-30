@@ -392,8 +392,11 @@ remove() {
             fi
         fi
         if [ "$database_name" != "" ] && [ "$database_user" != "" ]; then
-            $mysql -uroot -p$mysql_password -e "DROP DATABASE $database_name;"
-            $mysql -uroot -p$mysql_password -e "DROP USER '$database_user'@localhost;"
+            input "remove_db" "Remove ${database_name} and ${database_user}?" false
+            if ${_remove_db}; then
+                $mysql -uroot -p$mysql_password -e "DROP DATABASE $database_name;"
+                $mysql -uroot -p$mysql_password -e "DROP USER '$database_user'@localhost;"
+            fi
         fi
         echo ""
         echo "REMOVING $1 VIRTUALHOST"
