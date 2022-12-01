@@ -469,7 +469,10 @@ http {
     server {
         server_name _;
         listen 80 default_server;
-        return 444;
+        include snippets/vhost-letsencrypt.conf;
+        location / {
+            return 444;
+        }
     }
     gzip on;
     gzip_disable "msie6";
@@ -559,17 +562,14 @@ location ~ \.php {
 EOF
     fi
 
-    # perform all letsencrypt validations in a separate directory
+    # configure nginx for certbot validation
     header "Configuring Nginx: Lets Encrypt"
-    LETSENCRYPT_ROOT="/usr/share/nginx/letsencrypt"
-    report_append "LETSENCRYPT_ROOT" ${LETSENCRYPT_ROOT}
-    mkdir -p "${LETSENCRYPT_ROOT}"
     cat > /etc/nginx/snippets/vhost-letsencrypt.conf << EOF
 location ^~ /.well-known/acme-challenge/ {
     allow all;
     access_log /var/log/nginx/letsencrypt.access.log;
     error_log /var/log/nginx/letsencrypt.error.log;
-    root ${LETSENCRYPT_ROOT};
+    proxy_pass http://localhost:8008/.well-known/acme-challenge/;
 }
 EOF
     # generate the diffie-hellman parameters
@@ -854,6 +854,10 @@ backend = %(sshd_backend)s
 EOF
 
 iptables -F
+
+# configure iptables to block certbot standalone port
+iptables -A INPUT -p tcp --dport 8008 -j DROP
+iptables -A OUTPUT -p tcp --sport 8008 -j DROP
 
 # if SSH uses port other than 22, add a honeypot
 if [ ! "${_ssh_port}" = "22" ]; then

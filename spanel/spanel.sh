@@ -92,7 +92,6 @@ ini_get() {
 
 ### Script params
 CERTBOT_PATH=$(ini_get "CERTBOT_PATH")
-LETSENCRYPT_ROOT=$(ini_get "LETSENCRYPT_ROOT")
 www_root=$(ini_get "WWW_ROOT")
 ftp_user=$(ini_get "FTP_USER")
 FTP_PORT=$(ini_get "FTP_PORT")
@@ -272,9 +271,8 @@ EOF
         letsencrypt_email="webmaster@${HOST}"
         printf "Requesting a certificate from Let's Encrypt:\n"
         printf " - email:   ${letsencrypt_email}\n"
-        printf " - webroot: ${LETSENCRYPT_ROOT}\n"
         printf " - domains: ${domains}\n"
-        "${CERTBOT_PATH}" certonly --non-interactive --agree-tos --email "${letsencrypt_email}" --webroot -w "${LETSENCRYPT_ROOT}" -d "${domains}"
+        "${CERTBOT_PATH}" certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email "${letsencrypt_email}" -d "${domains}"
         if [ ! -r "/etc/letsencrypt/live/${HOST}/fullchain.pem" ]; then
             echo "Can't find the certificate file. Aborting."
             if [ -f "${sites_available}/${conf_file_name}" ]; then
@@ -418,7 +416,7 @@ remove() {
 }
 
 certbot_update_all() {
-    ${CERTBOT_PATH} renew --webroot -w "${LETSENCRYPT_ROOT}" --post-hook "service nginx reload"
+    ${CERTBOT_PATH} renew --standalone --http-01-port 8008 --post-hook "service nginx reload"
 }
 
 # Receive a path as an argument, make it writable to the web server
