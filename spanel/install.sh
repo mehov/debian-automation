@@ -458,7 +458,6 @@ events {
     multi_accept on;
 }
 http {
-    limit_req_zone \$binary_remote_addr zone=byip:64m rate=4r/s;
     server_names_hash_bucket_size 128;
     client_max_body_size 32m;
     include mime.types;
@@ -492,6 +491,15 @@ map $remote_addr $trusted_ip {
     default 0;
     #192.0.2.4 1;
 }
+EOF
+
+        cat > /etc/nginx/conf.d/limit_req.conf << 'EOF'
+map $trusted_ip $limit_req_key {
+    default $binary_remote_addr;
+    1 "";
+}
+limit_req_zone $limit_req_key zone=per_ip:64m rate=4r/s;
+limit_req_zone $limit_req_key zone=per_ip_slow:64m rate=30r/m;
 EOF
 
     if [ ! -e "/etc/nginx/snippets/fastcgi-php.conf" ]; then
@@ -542,7 +550,7 @@ location ~ \.php {
         access_log /var/log/nginx/suspicious.log suslog;
         return 500;
     }
-    limit_req zone=byip burst=4;
+    limit_req zone=per_ip burst=4;
     include snippets/fastcgi-php.conf;
     keepalive_timeout 0;
     fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
