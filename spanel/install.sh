@@ -487,6 +487,13 @@ http {
 }
 EOF
 
+        cat > /etc/nginx/conf.d/trusted_ip.conf << 'EOF'
+map $remote_addr $trusted_ip {
+    default 0;
+    #192.0.2.4 1;
+}
+EOF
+
     if [ ! -e "/etc/nginx/snippets/fastcgi-php.conf" ]; then
         cat > /etc/nginx/snippets/fastcgi-php.conf << EOF
 # regex to split \$uri to \$fastcgi_script_name and \$fastcgi_path
