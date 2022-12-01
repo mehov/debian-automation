@@ -272,6 +272,7 @@ EOF
         printf "Requesting a certificate from Let's Encrypt:\n"
         printf " - email:   ${letsencrypt_email}\n"
         printf " - domains: ${domains}\n"
+        echo "${CERTBOT_PATH} certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email \"${letsencrypt_email}\" -d \"${domains}\""
         "${CERTBOT_PATH}" certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email "${letsencrypt_email}" -d "${domains}"
         if [ ! -r "/etc/letsencrypt/live/${HOST}/fullchain.pem" ]; then
             echo "Can't find the certificate file. Aborting."
