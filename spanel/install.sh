@@ -855,9 +855,9 @@ EOF
 
 iptables -F
 
-# configure iptables to block certbot standalone port
+# allow only localhost to the certbot standalone port
+iptables -A INPUT -p tcp -i lo --dport 8008 -j ACCEPT
 iptables -A INPUT -p tcp --dport 8008 -j DROP
-iptables -A OUTPUT -p tcp --sport 8008 -j DROP
 
 # if SSH uses port other than 22, add a honeypot
 if [ ! "${_ssh_port}" = "22" ]; then
