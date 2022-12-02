@@ -285,6 +285,7 @@ EOF
             exit 1
         fi
         chown -R www-data "/etc/letsencrypt/live/${HOST}"
+        chown -R www-data "/etc/letsencrypt/archive/${HOST}"
         # cut -3 lines from the end of file (.ngaccess, vhost-common.conf, bracket)
         # that way we can later append further configuration to this directive
         head -n -3 "${sites_available}/${conf_file_name}" > "${sites_available}/${conf_file_name}.tmp"
