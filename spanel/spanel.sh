@@ -323,7 +323,6 @@ cat >> "${sites_available}/${conf_file_name}" << EOF
         include snippets/vhost-ssl.conf;
     }
 EOF
-        restart_nginx 
     fi
     if [ -n "$(ini_get MYSQL_PORT)" ] && ${_database}; then
         $mysql -uroot -p$mysql_password -e "CREATE DATABASE \`${_database_name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
@@ -342,6 +341,7 @@ EOF
             fi
         fi
     fi
+    restart_nginx
 }
 remove_nginx_host() {
     # $1=hostname;
