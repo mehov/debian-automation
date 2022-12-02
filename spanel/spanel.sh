@@ -315,7 +315,7 @@ cat >> "${sites_available}/${conf_file_name}" << EOF
         access_log /var/log/nginx/${HOST}.access.log;
         error_log /var/log/nginx/${HOST}.error.log;
         root ${_dir_public};
-        include "${_dir}/.ngaccess";
+        include "${_dir}/.*ngaccess";
         include snippets/vhost-common.conf;
         ssl_certificate /etc/letsencrypt/live/${HOST}/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/${HOST}/privkey.pem;
