@@ -368,24 +368,24 @@ remove() {
             database_user=`cat $config_php | grep user | sed -e "s/.*='\(.*\)';/\1/g"`
         else
             echo "Can't find the config.php file!"
-            read -p "Remove the database manually? [Y/n]:" remove_database
-            if [ "$remove_database" != "n" ] && [ "$remove_database"!="N" ]; then
+            input "remove_db" "Remove the database manually?" false
+            if ${_remove_db}; then
                 read -p "MySQL database name: " database_name
                 read -p "MySQL database user: " database_user
             fi
         fi
         if [ "$database_name" != "" ] && [ "$database_user" != "" ]; then
-            input "remove_db" "Remove ${database_name} and ${database_user}?" false
-            if ${_remove_db}; then
+            input "remove_db_confirm" "Remove ${database_name} and ${database_user}?" false
+            if ${_remove_db_confirm}; then
                 $mysql -uroot -p$mysql_password -e "DROP DATABASE $database_name;"
                 $mysql -uroot -p$mysql_password -e "DROP USER '$database_user'@localhost;"
             fi
         fi
         echo ""
         echo "REMOVING $1 VIRTUALHOST"
-        read -p "Remove $site_dir? [y/N]: " remove_dir
+        input "remove_dir" "Remove $site_dir?" false
         echo -n "Web root... "
-        if [ "$remove_dir" != "y" ] && [ "$remove_dir" != "Y" ]; then
+        if ! ${_remove_dir}; then
             echo "untouched."
         else
             if [ ! rm -r $site_dir ]; then
