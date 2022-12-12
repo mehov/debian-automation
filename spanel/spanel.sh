@@ -353,7 +353,7 @@ remove_nginx_host() {
     if [ -f "${sites_available}/${conf_file_name}" ]; then
         rm "${sites_available}/${conf_file_name}"
     fi
-    ${CERTBOT_PATH} delete --cert-name "${1}"
+    ${CERTBOT_PATH} delete --non-interactive --cert-name "${1}"
 }
 
 remove() {
@@ -403,7 +403,7 @@ remove() {
 }
 
 certbot_update_all() {
-    ${CERTBOT_PATH} renew --standalone --http-01-port 8008 --allow-subset-of-names --post-hook "service nginx reload"
+    ${CERTBOT_PATH} renew --non-interactive --standalone --http-01-port 8008 --allow-subset-of-names --post-hook "service nginx reload"
 }
 
 # Receive a path as an argument, make it writable to the web server
