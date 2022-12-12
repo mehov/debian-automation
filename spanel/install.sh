@@ -150,10 +150,7 @@ install() {
 
     input "php" "Install PHP?" false
     if ${_php}; then
-        PHP_VER="7"
         input "php_psz" "Expected size of a single PHP process, in MB" 64
-    else 
-        PHP_VER="0"
     fi
     hostname_old=`hostname`
     if [ "${hostname_old}" = "" ] || [ "${hostname_old}" = "vps" ]; then
@@ -266,6 +263,7 @@ install() {
     do_install dialog
 
     header "Updating sources.list"
+    debian_release=$(printf "%.0f\n" $(lsb_release -sr)) # truncate to major ver
     debian_codename=$(lsb_release -sc)
     if [ -z "${debian_codename}" ]; then
         echo "Failed to get the Debian version codename using lsb_release"
@@ -281,8 +279,7 @@ install() {
         echo "deb-src http://nginx.org/packages/debian/ ${debian_codename} nginx" >> /etc/apt/sources.list
         wget https://nginx.org/keys/nginx_signing.key -O - | apt-key add -
     fi
-    debian_release=$(printf "%.0f\n" $(lsb_release -sr)) # truncate to major ver
-    if [ "${debian_release}" = "8" ]; then
+    if ${_php}; then
         wget -q https://packages.sury.org/php/apt.gpg -O- | apt-key add -
         echo "deb https://packages.sury.org/php/ ${debian_codename} main" >> /etc/apt/sources.list
     fi
@@ -360,7 +357,7 @@ EOF
     if ${_php}; then
         header "Installing PHP and it's modules"
         for PHP_MOD in "common cli fpm mysql curl gd mcrypt intl json bcmath imap mbstring xml opcache zip sqlite3"; do
-            do_install php${PHP_VER}*-${PHP_MOD}
+            do_install php-${PHP_MOD}
         done
     fi
     header "Configuring the software"
