@@ -900,7 +900,7 @@ if [ -n "${_whitelisted_ips}" ]; then
     if [ -n "${_ssh_port}" ] || [ -n "${_ftp_port}" ] || [ -n "${_mysql_port}" ]; then
         header "Trusting whitelisted IP addresses"
         # trust the provided IPs
-        sh ${HOSTMANAGER_PATH} trust "${_whitelisted_ips}"
+        bash ${HOSTMANAGER_PATH} trust "${_whitelisted_ips}"
         # block everyone else
         WHTLST_PORTS="${_ssh_port} ${_ftp_port} ${_mysql_port}"
         for PORT in ${WHTLST_PORTS}; do
