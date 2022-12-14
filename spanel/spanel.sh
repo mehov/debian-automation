@@ -235,29 +235,29 @@ try_files \$uri \$uri/ /index.php?\$args;
         rm "${sites_available}/${conf_file_name}"
     fi
     if [ ! -z "${_aliases}" ]; then
-cat >> "${sites_available}/${conf_file_name}" << EOF
+        cat >> "${sites_available}/${conf_file_name}" << EOF
 server {
-listen 80;
-server_name ${_aliases};
-access_log /var/log/nginx/${HOST}-aliases.access.log;
-error_log /var/log/nginx/${HOST}-aliases.error.log;
-include snippets/vhost-letsencrypt.conf;
-location / {
-    return 301 http://${HOST}\$request_uri;
-}
+    listen 80;
+    server_name ${_aliases};
+    access_log /var/log/nginx/${HOST}-aliases.access.log;
+    error_log /var/log/nginx/${HOST}-aliases.error.log;
+    include snippets/vhost-letsencrypt.conf;
+    location / {
+        return 301 http://${HOST}\$request_uri;
+    }
 }
 EOF
-fi
-cat >> "${sites_available}/${conf_file_name}" << EOF
-    server {
-        listen 80;
-        server_name ${HOST};
-        access_log /var/log/nginx/${HOST}.access.log;
-        error_log /var/log/nginx/${HOST}.error.log;
-        root ${_dir_public}; # config_path ${_dir}
-        include snippets/vhost-letsencrypt.conf;
-        include snippets/vhost-common.conf;
-    }
+    fi
+    cat >> "${sites_available}/${conf_file_name}" << EOF
+server {
+    listen 80;
+    server_name ${HOST};
+    access_log /var/log/nginx/${HOST}.access.log;
+    error_log /var/log/nginx/${HOST}.error.log;
+    root ${_dir_public}; # config_path ${_dir}
+    include snippets/vhost-letsencrypt.conf;
+    include snippets/vhost-common.conf;
+}
 EOF
     if ! [ -f "${sites_enabled}/${conf_file_name}" ]; then
         ln -s "${sites_available}/${conf_file_name}" "${sites_enabled}/${conf_file_name}"
@@ -291,38 +291,38 @@ EOF
         head -n -3 "${sites_available}/${conf_file_name}" > "${sites_available}/${conf_file_name}.tmp"
         mv "${sites_available}/${conf_file_name}.tmp" "${sites_available}/${conf_file_name}"
         cat >> "${sites_available}/${conf_file_name}" << EOF
-        location / {
-            return 301 https://\$server_name\$request_uri;
-        }
+    location / {
+        return 301 https://\$server_name\$request_uri;
     }
+}
 EOF
-if [ ! -z "${_aliases}" ]; then
-    cat >> "${sites_available}/${conf_file_name}" << EOF
-    server {
-        listen 443 ssl http2;
-        server_name ${_aliases};
-        ssl_certificate /etc/letsencrypt/live/${HOST}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/${HOST}/privkey.pem;
-        include snippets/vhost-ssl.conf;
-        location / {
-            return 301 https://${HOST}\$request_uri;
-        }
+        if [ ! -z "${_aliases}" ]; then
+            cat >> "${sites_available}/${conf_file_name}" << EOF
+server {
+    listen 443 ssl http2;
+    server_name ${_aliases};
+    ssl_certificate /etc/letsencrypt/live/${HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${HOST}/privkey.pem;
+    include snippets/vhost-ssl.conf;
+    location / {
+        return 301 https://${HOST}\$request_uri;
     }
+}
 EOF
-fi
-cat >> "${sites_available}/${conf_file_name}" << EOF
-    server {
-        listen 443 ssl http2;
-        server_name ${HOST};
-        access_log /var/log/nginx/${HOST}.access.log;
-        error_log /var/log/nginx/${HOST}.error.log;
-        root ${_dir_public};
-        include "${_dir}/.*ngaccess";
-        include snippets/vhost-common.conf;
-        ssl_certificate /etc/letsencrypt/live/${HOST}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/${HOST}/privkey.pem;
-        include snippets/vhost-ssl.conf;
-    }
+        fi
+        cat >> "${sites_available}/${conf_file_name}" << EOF
+server {
+    listen 443 ssl http2;
+    server_name ${HOST};
+    access_log /var/log/nginx/${HOST}.access.log;
+    error_log /var/log/nginx/${HOST}.error.log;
+    root ${_dir_public};
+    include "${_dir}/.*ngaccess";
+    include snippets/vhost-common.conf;
+    ssl_certificate /etc/letsencrypt/live/${HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${HOST}/privkey.pem;
+    include snippets/vhost-ssl.conf;
+}
 EOF
     fi
     if [ -n "$(ini_get MYSQL_PORT)" ] && ${_database}; then
