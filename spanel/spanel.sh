@@ -356,6 +356,8 @@ EOF
             fi
         fi
     fi
+    chown -R $(ini_get "SSH_USER") "${_dir_public}"
+    chown -R $(ini_get "SSH_USER") "${_dir}"
     restart_nginx
 }
 remove_nginx_host() {
