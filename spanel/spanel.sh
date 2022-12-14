@@ -154,14 +154,14 @@ add() {
         add_alias
     fi
     # Letsencrypt
-    SSL_CERTIFICATE_DIR="/etc/letsencrypt/live/${HOST}"
-    if [ -d "${SSL_CERTIFICATE_DIR}" ]; then
+    input "ssl_certificate_dir" "" "/etc/letsencrypt/live/${HOST}" # no prompt, use if passed, default to letsencrypt
+    if [ -d "${_ssl_certificate_dir}" ]; then
         # Ignore the folder if it exists but does not contain the certificates
-        if [ ! -r "${SSL_CERTIFICATE_DIR}/fullchain.pem" ] || [ ! -r "${SSL_CERTIFICATE_DIR}/privkey.pem" ]; then
-            SSL_CERTIFICATE_DIR=""
+        if [ ! -r "${_ssl_certificate_dir}/fullchain.pem" ] || [ ! -r "${_ssl_certificate_dir}/privkey.pem" ]; then
+            _ssl_certificate_dir=""
         fi
     fi
-    if [ ! -d "${SSL_CERTIFICATE_DIR}" ]; then
+    if [ ! -d "${_ssl_certificate_dir}" ]; then
         LE_PROMPT="\n"
         LE_PROMPT=${LE_PROMPT}"You can get a free SSL/TLS certificate from Let's Encrypt.\n"
         LE_PROMPT=${LE_PROMPT}"Warning: your domain will be listed in public "
@@ -271,7 +271,7 @@ EOF
     if ! [ -f "${sites_enabled}/${conf_file_name}" ]; then
         ln -s "${sites_available}/${conf_file_name}" "${sites_enabled}/${conf_file_name}"
     fi
-    if [ ! -d "${SSL_CERTIFICATE_DIR}" ] && ${_letsencrypt} && [ -n "${CERTBOT_PATH}" ] && [ -f "${CERTBOT_PATH}" ]; then
+    if [ ! -d "${_ssl_certificate_dir}" ] && ${_letsencrypt} && [ -n "${CERTBOT_PATH}" ] && [ -f "${CERTBOT_PATH}" ]; then
         restart_nginx # restart so the host goes live and is verifiable
         domains="${HOST}"
         for alias in ${_aliases}; do
@@ -283,7 +283,7 @@ EOF
         printf " - domains: ${domains}\n"
         echo "${CERTBOT_PATH} certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email \"${letsencrypt_email}\" -d \"${domains}\""
         "${CERTBOT_PATH}" certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email "${letsencrypt_email}" -d "${domains}"
-        if [ ! -r "${SSL_CERTIFICATE_DIR}/fullchain.pem" ] || [ ! -r "${SSL_CERTIFICATE_DIR}/privkey.pem" ]; then
+        if [ ! -r "${_ssl_certificate_dir}/fullchain.pem" ] || [ ! -r "${_ssl_certificate_dir}/privkey.pem" ]; then
             echo "Can't find the certificate file. Aborting."
             if [ -f "${sites_available}/${conf_file_name}" ]; then
                 rm "${sites_available}/${conf_file_name}"
@@ -296,10 +296,10 @@ EOF
         chown -R www-data "/etc/letsencrypt/live/${HOST}"
         chown -R www-data "/etc/letsencrypt/archive/${HOST}"
     else
-        echo "${SSL_CERTIFICATE_DIR} exists"
+        echo "${_ssl_certificate_dir} exists"
     fi
     # If we have the certificate directory with both certificates after all
-    if [ -d "${SSL_CERTIFICATE_DIR}" ] && [ -r "${SSL_CERTIFICATE_DIR}/fullchain.pem" ] && [ -r "${SSL_CERTIFICATE_DIR}/privkey.pem" ]; then
+    if [ -d "${_ssl_certificate_dir}" ] && [ -r "${_ssl_certificate_dir}/fullchain.pem" ] && [ -r "${_ssl_certificate_dir}/privkey.pem" ]; then
         # cut -3 lines from the end of file (.ngaccess, vhost-common.conf, bracket)
         # that way we can later append further configuration to this directive
         head -n -3 "${sites_available}/${conf_file_name}" > "${sites_available}/${conf_file_name}.tmp"
@@ -315,8 +315,8 @@ EOF
 server {
     listen 443 ssl http2;
     server_name ${_aliases};
-    ssl_certificate ${SSL_CERTIFICATE_DIR}/fullchain.pem;
-    ssl_certificate_key ${SSL_CERTIFICATE_DIR}/privkey.pem;
+    ssl_certificate ${_ssl_certificate_dir}/fullchain.pem;
+    ssl_certificate_key ${_ssl_certificate_dir}/privkey.pem;
     include snippets/vhost-ssl.conf;
     location / {
         return 301 https://${HOST}\$request_uri;
@@ -333,8 +333,8 @@ server {
     root ${_dir_public};
     include "${_dir}/.*ngaccess";
     include snippets/vhost-common.conf;
-    ssl_certificate ${SSL_CERTIFICATE_DIR}/fullchain.pem;
-    ssl_certificate_key ${SSL_CERTIFICATE_DIR}/privkey.pem;
+    ssl_certificate ${_ssl_certificate_dir}/fullchain.pem;
+    ssl_certificate_key ${_ssl_certificate_dir}/privkey.pem;
     include snippets/vhost-ssl.conf;
 }
 EOF
