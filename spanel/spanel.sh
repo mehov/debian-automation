@@ -179,7 +179,7 @@ add() {
     database_user_random=`random_string -l 16`
     database_password_waitforit_random=`random_string -l 16`
     if [ -n "$(ini_get MYSQL_PORT)" ]; then
-        input "database" "Create MySQL database?" true
+        input "database" "Create MySQL database?" false
         if ${_database}; then
             input "database_name" "Enter MySQL database name" $database_name_random
             input "database_user" "Enter MySQL user" $database_user_random
