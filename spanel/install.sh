@@ -356,7 +356,7 @@ EOF
     fi
     if ${_php}; then
         header "Installing PHP and it's modules"
-        for PHP_MOD in "common cli fpm mysql curl gd mcrypt intl json bcmath imap mbstring xml opcache zip sqlite3"; do
+        for PHP_MOD in common cli fpm mysql curl gd mcrypt intl json bcmath imap mbstring xml opcache zip sqlite3; do
             do_install php-${PHP_MOD}
         done
     fi
