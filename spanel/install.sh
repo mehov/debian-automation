@@ -466,6 +466,9 @@ http {
     server {
         server_name _;
         listen 80 default_server;
+        listen 443 ssl default_server;
+        ssl_certificate /etc/nginx/default_server.crt;
+        ssl_certificate_key /etc/nginx/default_server.key;
         include snippets/vhost-letsencrypt.conf;
         location / {
             return 444;
@@ -485,7 +488,7 @@ http {
     include /etc/nginx/sites-enabled/*;
 }
 EOF
-
+        openssl req -x509 -nodes -days 36524 -newkey rsa:4096 -keyout /etc/nginx/default_server.key -out /etc/nginx/default_server.crt -subj "/C=FR/ST=/L=Paris/O=/CN=*"
         cat > /etc/nginx/conf.d/trusted_ip.conf << 'EOF'
 map $remote_addr $trusted_ip {
     default 0;
