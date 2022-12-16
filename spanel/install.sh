@@ -146,6 +146,7 @@ install() {
     input "nginx" "Install Nginx?" false
     if ${_nginx}; then
         input "certbot" "Install the Let's Encrypt Certbot?" true
+        input "dhparam_numbits" "" 4096 # accept via argument, do not prompt
     fi
 
     input "php" "Install PHP?" false
@@ -585,7 +586,7 @@ location ^~ /.well-known/acme-challenge/ {
 }
 EOF
     # generate the diffie-hellman parameters
-    openssl dhparam -out /etc/nginx/dhparam.pem 4096
+    openssl dhparam -out /etc/nginx/dhparam.pem ${_dhparam_numbits}
 
     header "Configuring Nginx: WAF"
     cat > /etc/nginx/snippets/suspicious.conf << 'EOF'
