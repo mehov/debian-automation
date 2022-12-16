@@ -177,7 +177,7 @@ install() {
     if $_whitelist_ips; then
         input "whitelisted_ips" "Whitelisted IP addresses, space-separated" "${SSH_CLIENT_IP}"
     else
-        whitelisted_ips=""
+        _whitelisted_ips=""
     fi
 
     input "nopass" "Use your public SSH key instead of password-based authentication? You'll need to paste your SSH key at the end of this setup so that the server lets you in next time you connect" true
