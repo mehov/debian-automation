@@ -664,7 +664,7 @@ manage_http_basic_auth() {
                 rm "${HTTP_HTPA}"
             fi
             # remove the auth_basic directives from the nginx config
-            echo "Deleting the auth_basic directives"
+            echo "Deleting the auth_basic directives in ${WEBCONF}"
             sed -i '/^auth_basic/d' ${WEBCONF}
         fi
     fi
@@ -734,7 +734,7 @@ case "${1}" in
         fi
         # disabling auth if requested, regardless of the user account
         if [ "_${2}" = "_off" ]; then
-            echo "Disabling HTTP Basic Auth for this website."
+            echo "Disabling HTTP Basic Auth for ${2}@${WEBROOT}"
             manage_http_basic_auth "${2}" "off"
             exit 0;
         fi
@@ -744,7 +744,7 @@ case "${1}" in
             # and if the requested user is already listed in the passwords file
             if grep -q "${2}:" "${HTTP_HTPA}"; then
                 # ask whether to delete the user or update password
-                read -p "User ${HTTP_USER} exists. Update or delete? [U/d]:" HTTP_ACT
+                read -p "User ${HTTP_USER} exists in ${HTTP_HTPA}. Update or delete? [U/d]:" HTTP_ACT
                 if [ "_${HTTP_ACT}" = "_d" ] || [ "_${HTTP_ACT}" = "_D" ]; then
                     echo "Disabling HTTP Basic Auth for ${2}."
                     manage_http_basic_auth "${2}" "off"
@@ -753,7 +753,7 @@ case "${1}" in
             fi
         fi
         # otherwise, set password for the user (regardless of whether it exists already)
-        echo "Configuring HTTP Basic Auth for ${2}."
+        echo "Configuring HTTP Basic Auth for ${2}@${WEBROOT}"
         manage_http_basic_auth "${2}" "on"
         ;;
     *)
