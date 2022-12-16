@@ -622,6 +622,9 @@ manage_http_basic_auth() {
     # prepare the variables
     WEBROOT=$(pwd)
     WEBCONF=$(grep -FliR -m 1 --color=never "root ${WEBROOT};" ${sites_available})
+    if [ -z "${WEBCONF}" ] && [ "${WEBROOT}" = "/var/www" ]; then
+        WEBCONF="/etc/nginx/nginx.conf"
+    fi
     HTTP_HTPA="${WEBCONF}.htpasswd"
     HTTP_USER="${1}"
     # if we're setting a password for the user
@@ -647,8 +650,7 @@ manage_http_basic_auth() {
         sed -i "s|${HTTP_USER}:[^ ]*|${HTTP_USER}:${HTTP_HASH}|" ${HTTP_HTPA}
         # add auth_basic to nginx configuration, if not already present
         if ! grep -q "auth_basic" "${WEBCONF}"; then
-            HTTP_AUTH="auth_basic \"Auth\";\nauth_basic_user_file ${HTTP_HTPA};"
-            sed -i "/^ *server {$/ a ${HTTP_AUTH}" ${WEBCONF}
+            sed -E -i "s@^( *)(server|http) \{\$@\1\2 {\n\1    auth_basic \"Auth\";\n\1    auth_basic_user_file ${HTTP_HTPA};@g" ${WEBCONF}
         fi
     else
         # if a specific user is requested, delete it from the passwords file
@@ -665,7 +667,7 @@ manage_http_basic_auth() {
             fi
             # remove the auth_basic directives from the nginx config
             echo "Deleting the auth_basic directives in ${WEBCONF}"
-            sed -i '/^auth_basic/d' ${WEBCONF}
+            sed -i '/^\s*auth_basic/d' ${WEBCONF}
         fi
     fi
     service nginx restart
@@ -728,8 +730,11 @@ case "${1}" in
         # make sure a website to work with is selected
         WEBROOT=$(pwd)
         WEBCONF=$(grep -FliR -m 1 --color=never "root ${WEBROOT};" ${sites_available})
+        if [ -z "${WEBCONF}" ] && [ "${WEBROOT}" = "/var/www" ]; then
+            WEBCONF="/etc/nginx/nginx.conf"
+        fi
         if [ -z "${WEBCONF}" ]; then
-            echo "Please cd to a folder that contains a Nginx-hosted website."
+            echo "Please cd to a folder that contains a Nginx-hosted website, or /var/www to include all websites."
             exit 1;
         fi
         # disabling auth if requested, regardless of the user account
