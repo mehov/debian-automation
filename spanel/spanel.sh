@@ -440,23 +440,14 @@ permit_writing() {
     # Confirm the path
     echo "Setting ${ITEMPATH} to be writable by the web server."
     # Collect input
-    read -p "Clear the contents? [Y/n]: " RM_Yn
-    if [ "${RM_Yn}" = "" ] || [ "${RM_Yn}" = "Y" ]; then
-        RM_Yn="y"
-    fi
-    read -p "Block HTTP access? (Recommended.) [Y/n]: " BH_Yn
-    if [ "${BH_Yn}" = "" ] || [ "${BH_Yn}" = "Y" ]; then
-        BH_Yn="y"
-    fi
-    if [ -d "${ITEMPATH}" ] && [ "y" != "${BH_Yn}" ]; then
+    input "clear" "Clear the contents?" true
+    input "nohttp" "Block HTTP access? (Recommended.)" true
+    if [ -d "${ITEMPATH}" ] && ! ${_nohttp}; then
         echo "Leaving a folder both writable and accessible may let attackers upload, access and execute malicious scripts inside it."
-        read -p "Block PHP execution? (Highly recommended.) [Y/n]: " BP_Yn
-        if [ "${BP_Yn}" = "" ] || [ "${BP_Yn}" = "Y" ]; then
-            BP_Yn="y"
-        fi
+        input "nophp" "Block PHP execution? (Highly recommended.)" true
     fi
     # clean up, if requested
-    if [ "y" = "${RM_Yn}" ]; then
+    if ${_clear}; then
         if [ -d "${ITEMPATH}" ]; then
             rm -rf "${ITEMPATH}"/*
         elif [ -f "${ITEMPATH}" ]; then
@@ -471,7 +462,7 @@ permit_writing() {
         find "${ITEMPATH}" -type d -exec chmod g+ws {} \;
     fi
     # abort if no HTTP or PHP blocking is requested
-    if [ "y" != "${BH_Yn}" ] && [ "y" != "${BP_Yn}" ]; then
+    if ! ${_nohttp} && ! ${_nophp}; then
         exit 0
     fi
     # traverse the tree looking for .ngaccess
@@ -490,14 +481,14 @@ permit_writing() {
     # if the file was found
     if [ -e "${NGACCESS}" ]; then
         ITEMPATH_WEB=$(echo "${ITEMPATH}" | sed -e "s@${TRY_PATH}@@g")
-        if [ "y" = "${BH_Yn}" ]; then
+        if ${_nohttp}; then
 cat >> "${NGACCESS}" << BHEOF
 location ~ ${ITEMPATH_WEB} {
     return 404;
 }
 BHEOF
         fi
-        if [ "y" = "${BP_Yn}" ]; then
+        if ${_nophp}; then
 cat >> "${NGACCESS}" << BHEOF
 location ~* ${ITEMPATH_WEB}/.*\.php {
     return 404;
