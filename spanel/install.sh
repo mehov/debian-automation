@@ -484,7 +484,6 @@ http {
     gzip_http_version 1.1;
     gzip_min_length 256;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/x-javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon application/x-font-opentype application/x-font-truetype font/eot font/otf image/vnd.microsoft.icon;
-    include snippets/suspicious.conf;
     include /etc/nginx/conf.d/*.conf;
     include /etc/nginx/sites-enabled/*;
 }
@@ -601,7 +600,7 @@ EOF
     openssl dhparam -out /etc/nginx/dhparam.pem ${_dhparam_numbits}
 
     header "Configuring Nginx: WAF"
-    cat > /etc/nginx/snippets/suspicious.conf << 'EOF'
+    cat > /etc/nginx/conf.d/suspicious.conf << 'EOF'
 # poor man's WAF
 map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     default 0;
