@@ -506,6 +506,15 @@ limit_req_zone $limit_req_key zone=per_ip:64m rate=10r/s;
 limit_req_zone $limit_req_key zone=per_ip_slow:64m rate=30r/m;
 EOF
 
+        cat > /etc/nginx/conf.d/webp.conf << 'EOF'
+# https://serverfault.com/questions/630212/conditionally-serving-high-resolution-and-webp-images-with-nginx
+# https://alexey.detr.us/en/posts/2018/2018-08-20-webp-nginx-with-fallback/
+map $http_accept $ext_webp {
+    default "";
+    "~image\/webp" ".webp";
+}
+EOF
+
         cat > /etc/nginx/snippets/vhost-ssl.conf << 'EOF'
 ssl_dhparam /etc/nginx/dhparam.pem;
 ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
@@ -546,6 +555,9 @@ location = /robots.txt {
     allow all;
     log_not_found off;
     access_log off;
+}
+location ~* \.(jpe?g)$ {
+    try_files $uri$ext_webp $uri =404;
 }
 location ~* \.(ini)$ {
     return 404;
