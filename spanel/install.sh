@@ -502,7 +502,7 @@ map $trusted_ip $limit_req_key {
     default $binary_remote_addr;
     1 "";
 }
-limit_req_zone $limit_req_key zone=per_ip:64m rate=4r/s;
+limit_req_zone $limit_req_key zone=per_ip:64m rate=10r/s;
 limit_req_zone $limit_req_key zone=per_ip_slow:64m rate=30r/m;
 EOF
 
