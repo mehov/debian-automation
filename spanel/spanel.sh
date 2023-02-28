@@ -265,6 +265,7 @@ server {
     error_log /var/log/nginx/${HOST}.error.log;
     root ${_dir_public}; # config_path ${_dir}
     include snippets/vhost-letsencrypt.conf;
+    include "${_dir}/.*ngaccess";
     include snippets/vhost-common.conf;
 }
 EOF
