@@ -408,7 +408,10 @@ remove() {
         if [ -f "${sites_available}/${conf_file_name}" ]; then
             rm "${sites_available}/${conf_file_name}"
         fi
-        ${CERTBOT_PATH} delete --non-interactive --cert-name "${1}"
+        input "letsencrypt" "Delete the certbot certificate for ${1}?" true
+        if ${_letsencrypt}; then
+            ${CERTBOT_PATH} delete --non-interactive --cert-name "${1}"
+        fi
     else
         echo "Can't find the config file $config_nginx"
     fi
