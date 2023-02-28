@@ -360,17 +360,6 @@ EOF
     chown -R $(ini_get "SSH_USER") "${_dir}"
     restart_nginx
 }
-remove_nginx_host() {
-    # $1=hostname;
-    conf_file_name=`nginx_vhost_conf_name ${1}`
-    if [ -f "${sites_enabled}/${conf_file_name}" ]; then
-        rm "${sites_enabled}/${conf_file_name}"
-    fi
-    if [ -f "${sites_available}/${conf_file_name}" ]; then
-        rm "${sites_available}/${conf_file_name}"
-    fi
-    ${CERTBOT_PATH} delete --non-interactive --cert-name "${1}"
-}
 
 remove() {
     conf_file_name=`nginx_vhost_conf_name ${1}`
@@ -412,7 +401,14 @@ remove() {
                 echo "removed."
             fi
         fi
-        remove_nginx_host $1
+        conf_file_name=`nginx_vhost_conf_name ${1}`
+        if [ -f "${sites_enabled}/${conf_file_name}" ]; then
+            rm "${sites_enabled}/${conf_file_name}"
+        fi
+        if [ -f "${sites_available}/${conf_file_name}" ]; then
+            rm "${sites_available}/${conf_file_name}"
+        fi
+        ${CERTBOT_PATH} delete --non-interactive --cert-name "${1}"
     else
         echo "Can't find the config file $config_nginx"
     fi
