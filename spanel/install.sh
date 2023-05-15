@@ -830,6 +830,15 @@ if ${_noroot}; then
     if [ -d "${WWW_ROOT}" ]; then
         chown -R ${_ssh_user} "${WWW_ROOT}"
     fi
+    cat >> ${DIR_HOME}/.profile << '    EOF'
+alias grep="grep --color=auto"
+# https://superuser.com/questions/137438/664061#664061
+export HISTFILESIZE=
+export HISTSIZE=
+export HISTTIMEFORMAT="[%F %T] "
+export HISTFILE=~/.bash_eternal_history
+PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
+    EOF
 else
     DIR_HOME="/root"
 fi
