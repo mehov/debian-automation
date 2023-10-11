@@ -590,6 +590,7 @@ EOF
     header "Configuring Nginx: Lets Encrypt"
     cat > /etc/nginx/snippets/vhost-letsencrypt.conf << EOF
 location ^~ /.well-known/acme-challenge/ {
+    auth_basic off;
     allow all;
     access_log /var/log/nginx/letsencrypt.access.log;
     error_log /var/log/nginx/letsencrypt.error.log;
