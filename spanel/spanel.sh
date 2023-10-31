@@ -175,7 +175,7 @@ add() {
     input "dir" "Enter site directory path" "$(ini_get WWW_ROOT)/$HOST"
     input "dir_public" "" "${_dir}"
     # MySQL
-    database_name_random=`echo $1 | sed -e 's/\W//g'`;
+    database_name_random=`echo $HOST | sed -e 's/\W//g'`;
     database_user_random=`random_string -l 16`
     database_password_waitforit_random=`random_string -l 16`
     if [ -n "$(ini_get MYSQL_PORT)" ]; then
@@ -205,7 +205,7 @@ add() {
     fi
     # Adding
     echo ""
-    echo "ADDING VIRTUALHOST $1"
+    echo "ADDING VIRTUALHOST $HOST"
     echo -n "Web root... "
     if ! [ -d ${_dir} ]; then
         mkdir ${_dir}
