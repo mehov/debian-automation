@@ -139,7 +139,7 @@ nginx_vhost_conf_name() {
     echo "vhost-${1}.conf"
 }
 add() {
-    HOST=$1
+    HOST=$(echo $1 | idn)
     conf_file_name=`nginx_vhost_conf_name ${HOST}`
     if [ -f "${sites_available}/${conf_file_name}" ]; then
         input "force" "Host ${HOST} exists on this system. Continue?" false

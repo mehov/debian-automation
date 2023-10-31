@@ -329,6 +329,7 @@ EOF
     do_install git
     do_install fail2ban
     do_install whois
+    do_install idn
     do_install net-tools
     if [ -n "${_email}" ]; then
         do_install nullmailer
