@@ -768,6 +768,12 @@ case "${1}" in
         ALERT_FROM="$(hostname)@${ALERT_TO_HOST}"
         # save the MX record to nullmailer's config
         printf "${ALERT_TO_MX}" > /etc/nullmailer/remotes
+        # prepend date and server information
+        PREPEND=""
+        PREPEND="${PREPEND}Server IP: $(hostname -i)\n"
+        PREPEND="${PREPEND}Server Hostname: $(hostname)\n"
+        PREPEND="${PREPEND}Date: $(LC_ALL=C date +"%a, %d %h %Y %T %z")\n"
+        ALERT_TEXT="${PREPEND}\n${ALERT_TEXT}"
         # sending mail
         echo "Sending '${ALERT_SUBJECT}': from ${ALERT_FROM} to ${ALERT_TO} via ${ALERT_TO_MX}"
         printf %b "Subject: ${ALERT_SUBJECT}\n\n${ALERT_TEXT}" | "${ALERT_BIN}" -f "${ALERT_FROM}" "${ALERT_TO}"

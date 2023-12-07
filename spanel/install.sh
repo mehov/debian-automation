@@ -404,7 +404,7 @@ if [ -n "${_email}" ]; then
 
 if [ "${PAM_TYPE}" != "close_session" ]; then
     ALERT_SUBJECT="SSH Login Alert: ${PAM_USER}@${PAM_RHOST} to $(hostname)"
-    ALERT_TEXT="$(env)\n$(LC_ALL=C date +"%a, %d %h %Y %T %z")"
+    ALERT_TEXT="$(env)"
     spanel alert "${ALERT_SUBJECT}" "${ALERT_TEXT}"
 fi
 EOFALERTSCRIPT
