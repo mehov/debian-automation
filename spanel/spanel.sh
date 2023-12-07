@@ -716,6 +716,10 @@ case "${1}" in
         fi
         # clean up
         rm "${VAR_TMP}" "${VAR_JSON}"
+        if [ ! -L "/usr/bin/spanel" ]; then
+            echo "Creating a symlink from /usr/bin/spanel to ${0}"
+            ln -s "${0}" "/usr/bin/spanel"
+        fi
         ;;
     "password")
         # make sure a website to work with is selected
