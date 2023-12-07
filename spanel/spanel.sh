@@ -752,6 +752,26 @@ case "${1}" in
         echo "Configuring HTTP Basic Auth for ${2}@${WEBROOT}"
         manage_http_basic_auth "${2}" "on"
         ;;
+    "alert")
+        ALERT_SUBJECT="${2}"
+        ALERT_TEXT="${3}"
+        ALERT_BIN=$(which sendmail)
+        ALERT_TO=$(ini_get "ALERT_EMAIL")
+        # below is a way to avoid installing sendmail, exim, postfix, etc.
+        # nullmailer is lightweight, but relay only; lets relay right to target MX
+        # parse out recipient's email hostname
+        ALERT_TO_HOST=$(echo "${ALERT_TO}" | awk -F "@" '{print $2}')
+        # read it's MX address record
+        ALERT_TO_MX=$(dig +short "${ALERT_TO_HOST}" mx | sort -n | nawk '{print $2; exit}' | sed -e 's/\.$//')
+        # sender domain being ALERT_TO_HOST prevents rejections per DMARC policy
+        # sender user account being `hostname` identifies the sending server
+        ALERT_FROM="$(hostname)@${ALERT_TO_HOST}"
+        # save the MX record to nullmailer's config
+        printf "${ALERT_TO_MX}" > /etc/nullmailer/remotes
+        # sending mail
+        echo "Sending '${ALERT_SUBJECT}': from ${ALERT_FROM} to ${ALERT_TO} via ${ALERT_TO_MX}"
+        printf %b "Subject: ${ALERT_SUBJECT}\n\n${ALERT_TEXT}" | "${ALERT_BIN}" -f "${ALERT_FROM}" "${ALERT_TO}"
+        ;;
     *)
         echo "**** USAGE:"
         echo "spanel [add|remove] example.com"

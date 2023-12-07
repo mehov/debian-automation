@@ -397,27 +397,19 @@ EOF
 if [ -n "${_email}" ]; then
     header "Setting up alerts"
     report_append "ALERT_EMAIL" ${_email}
-    # below is a way to avoid installing sendmail, exim, postfix, etc.
-    # nullmailer is lightweight, but relay only; lets relay right to target MX
-    # parse out recipient's email hostname
-    ALERTEMAILHOST=$(echo "${_email}" | awk -F "@" '{print $2}')
-    # read it's MX address record
-    ALERTEMAILMX=$(dig +short "${ALERTEMAILHOST}" mx | sort -n | nawk '{print $2; exit}' | sed -e 's/\.$//')
-    # save the MX record to nullmailer's config
-    printf "${ALERTEMAILMX}" > /etc/nullmailer/remotes
     # configure the SSH login notifications
     ALERTSCRIPT="/home/login-notification.sh"
-    ALERTBIN=$(which sendmail)
-    cat > "${ALERTSCRIPT}" << EOFALERTSCRIPT
+    cat > "${ALERTSCRIPT}" << 'EOFALERTSCRIPT'
 #!/bin/sh
 
-if [ "\${PAM_TYPE}" != "close_session" ]; then
-    ALERT_DATE=\$(LC_ALL=C date +"%a, %d %h %Y %T %z")
-    ALERT_SUBJECT="SSH Login Alert: \${PAM_USER}@\${PAM_RHOST} to \$(hostname)"
-    printf %b "Subject: \${ALERT_SUBJECT}\n\$(env)\n\${ALERT_DATE}" | ${ALERTBIN} "${_email}"
+if [ "${PAM_TYPE}" != "close_session" ]; then
+    ALERT_SUBJECT="SSH Login Alert: ${PAM_USER}@${PAM_RHOST} to $(hostname)"
+    ALERT_TEXT="$(env)\n$(LC_ALL=C date +"%a, %d %h %Y %T %z")"
+    spanel alert "${ALERT_SUBJECT}" "${ALERT_TEXT}"
 fi
 EOFALERTSCRIPT
     chmod -w+x "${ALERTSCRIPT}"
+    # https://tuximail.github.io/pam.html
     echo "session optional pam_exec.so seteuid $ALERTSCRIPT" >> /etc/pam.d/sshd
     sed -i "s/^#* *UsePAM *[^ ]*/UsePAM yes/" /etc/ssh/sshd_config
     # enable fail2ban email notifications
