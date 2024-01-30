@@ -614,7 +614,7 @@ map "$request_uri $http_referer $http_user_agent $http_cookie" $suspicious {
     "~*(?<susmatch>select( |%[a-f0-9]{2}|\()+(.*)( |%[a-f0-9]{2}|\))+from)" 1;
     "~*(?<susmatch>union(%[0-9a-f]{2}|\W)+select((%[0-9a-f]{2}|\W)+from)?)" 1;
 }
-log_format suslog '$remote_addr /$susmatch/ - $remote_user $host [$time_local] '
+log_format suslog '$remote_addr  $susmatch  - $remote_user $host [$time_local] '
     '"$request" $status $body_bytes_sent '
     '"$http_referer" "$http_user_agent" "$http_cookie"';
 EOF
