@@ -428,6 +428,7 @@ certbot_update_all() {
 
 # Receive a path as an argument, make it writable to the web server
 # Optionally block HTTP access to that item and block PHP execution
+# Optionally create the item if it does not exist and its type is known
 permit_writing() {
     # remove the trailing slash, if any
     ROOT=${www_root%/}
@@ -441,10 +442,23 @@ permit_writing() {
             exit 1
             ;;
     esac
-    # Confirm the path
-    echo "Setting ${ITEMPATH} to be writable by the web server."
     # Collect input
-    input "clear" "Clear the contents?" true
+    if [ -e "${ITEMPATH}" ]; then # if the item exists
+        echo "Setting ${ITEMPATH} to be writable by the web server."
+        input "clear" "Clear the contents?" true
+    else # try to create it if we know the type (file or directory)
+        input "type" "Should ${ITEMPATH} be a file or a directory? [f/d]" ""
+        if [ "_${_type}" = "_f" ]; then
+            mkdir -p "$(dirname "${ITEMPATH}")" # ensure parent directory exists
+            touch "${ITEMPATH}"
+        elif [ "_${_type}" = "_d" ]; then
+            mkdir -p "${ITEMPATH}"
+        fi
+    fi
+    if [ ! -e "${ITEMPATH}" ]; then # final check
+        echo "${ITEMPATH} does not exist"
+        exit 1
+    fi
     input "nohttp" "Block HTTP access? (Recommended.)" true
     if [ -d "${ITEMPATH}" ] && ! ${_nohttp}; then
         echo "Leaving a folder both writable and accessible may let attackers upload, access and execute malicious scripts inside it."
