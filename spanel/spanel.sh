@@ -12,9 +12,9 @@ header() {
 }
 ARGS="$@"
 input() { # try taking required variable from flags/arguments, else prompt
-    NAME="${1}" # shorthand to the name of requested variable
-    PROMPT="${2}" # shorthand to the prompt text
-    DEFAULT="${3}" # shorthand to the default value
+    NAME="${1}" # shorthand to name of requested variable; _ as word separator
+    PROMPT="${2}" # shorthand to prompt text
+    DEFAULT="${3}" # shorthand to default value
     if ${_noninteractive}; then
         VALUE="${DEFAULT}"
         PROMPT=""
@@ -28,14 +28,18 @@ input() { # try taking required variable from flags/arguments, else prompt
     KEY_LENGTH="" # clean up
     VALUE="" # clean up
     for ARG in ${ARGS}; do # loop through flags/arguments passed to the script
-        KEY=$(echo ${ARG} | cut -f1 -d=) # parse --KEY out of --KEY=VALUE
-        if [ "${KEY}" != "--${NAME}" ]; then # skip keys that don't match
+        # 1. parse --KEY out of --KEY=VALUE
+        # 2. receive --example-var, convert to __example_var
+        #    dashes as word separators are common in command line arguments, but
+        #    are not allowed in variable names; input() expects _ as separator
+        KEY=$(echo ${ARG} | cut -f1 -d= | tr - _)
+        if [ "${KEY}" != "__${NAME}" ]; then # skip keys that don't match
             continue
         fi
         KEY_LENGTH=${#KEY}
         VALUE="${ARG:$KEY_LENGTH+1}" # parse VALUE out of --KEY=VALUE
         if [ -z "${VALUE}" ]; then # this flag has been provided with no value
-            header "Received ${KEY}: ${VALUE}"
+            header "Received ${ARG}"
             if "${IS_YN}"; then
                 VALUE=true # for booleans, consider no value as a yes
             else
