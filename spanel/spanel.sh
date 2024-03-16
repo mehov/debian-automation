@@ -493,7 +493,7 @@ permit_writing() {
             break
         else
             # go one level deeper
-            TRY_PATH=$(dirname $TRY_PATH)
+            TRY_PATH=$(dirname "$TRY_PATH")
         fi
     done
     # if the file was found
