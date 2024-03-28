@@ -845,7 +845,15 @@ if ${_nopass}; then
     sed -i "s/#PubkeyAuthentication/PubkeyAuthentication/g" /etc/ssh/sshd_config
     sed -i "s/PubkeyAuthentication no/PubkeyAuthentication yes/g" /etc/ssh/sshd_config
     mkdir -p "${DIR_HOME}/.ssh"
-    read -p "Please paste your public key here: " SSH_USER_PUBKEY
+    prompt_pubkey() {
+        read -p "Please paste your public key here: " SSH_USER_PUBKEY
+        echo "${SSH_USER_PUBKEY}" | ssh-keygen -l -f - 2>/dev/null
+        if [ $? -ne 0 ]; then
+            echo -e "The public key you provided is not valid.\n"
+            prompt_pubkey
+        fi
+    }
+    prompt_pubkey
     echo "${SSH_USER_PUBKEY} ${_ssh_user}" >> "${DIR_HOME}"/.ssh/authorized_keys
 fi
 chown -R ${_ssh_user}:sudo "${DIR_HOME}"
