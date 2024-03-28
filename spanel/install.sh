@@ -979,6 +979,8 @@ case "$1" in
                 exit
             fi
             "${BIN_SCREEN}" -S "spanel" bash "${0}" install ${@}
+            header "Configuration summary"
+            cat /root/.bonjour.ini
         else
             echo "Aborted."
         fi
