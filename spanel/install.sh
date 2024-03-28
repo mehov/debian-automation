@@ -855,6 +855,12 @@ if ${_nopass}; then
     }
     prompt_pubkey
     echo "${SSH_USER_PUBKEY} ${_ssh_user}" >> "${DIR_HOME}"/.ssh/authorized_keys
+else
+    # Enable password authentication
+    sed -i 's/^\s*#\?\s*PasswordAuthentication\s\+\w\+/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    # Prompt and set the password for the user
+    input "ssh_password" "Password for ${_ssh_user}" "$(random_string -l 16)"
+    echo "${_ssh_user}:${_ssh_password}" | sudo chpasswd
 fi
 chown -R ${_ssh_user}:sudo "${DIR_HOME}"
 # https://infosec-handbook.eu/blog/wss1-basic-hardening/#s3
