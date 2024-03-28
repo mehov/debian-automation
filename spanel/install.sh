@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ##todo http://serverfault.com/questions/172831/sending-email-from-my-server#comment150117_172834
 
