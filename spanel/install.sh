@@ -395,6 +395,7 @@ findtime = 1w
 bantime = 1w
 banaction = iptables-multiport
 banaction_allports = iptables-allports
+action = %(action_)s
 ignoreip = ${_whitelisted_ips}
 EOF
 
@@ -416,8 +417,6 @@ EOFALERTSCRIPT
     # https://tuximail.github.io/pam.html
     echo "session optional pam_exec.so seteuid $ALERTSCRIPT" >> /etc/pam.d/sshd
     sed -i "s/^#* *UsePAM *[^ ]*/UsePAM yes/" /etc/ssh/sshd_config
-    # enable fail2ban email notifications
-    echo "action = %(action_mwl)s" >> /etc/fail2ban/jail.local
     # configure fail2ban to notify the provided e-mail
     if [ -n "${_email}" ]; then
         echo "destemail = ${_email}" >> /etc/fail2ban/jail.local
