@@ -87,6 +87,10 @@ random_string() {
 do_install() {
     header "Installing ${1}"
     DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" $1
+    if [ $? -ne 0 ]; then
+        echo "Error during: do_install ${@}"
+        exit 1
+    fi
 }
 do_uninstall() {
     if [ "$#" = 2 ]; then
