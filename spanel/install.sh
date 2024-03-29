@@ -99,7 +99,7 @@ random_string() {
 do_install() {
     header "Installing ${1}"
     DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends -o Dpkg::Options::="--force-confnew" $1
-    if [ $? -ne 0 ]; then
+    if [ $? -ne 0 ] && [ -z ${2} ]; then
         echo "Error during: do_install ${@}"
         exit 1
     fi
@@ -407,10 +407,10 @@ EOF
     if ${_php}; then
         header "Installing PHP and it's modules"
         for PHP_MOD in common cli fpm mysql curl gd mcrypt intl json bcmath imap mbstring xml opcache zip sqlite3; do
-            do_install php-${PHP_MOD}
+            do_install php-${PHP_MOD} false
             if [ -n "${_php_ver}" ]; then
                 for php_ver in ${_php_ver}; do
-                    do_install php${php_ver}-${PHP_MOD}
+                    do_install php${php_ver}-${PHP_MOD} false
                 done
             fi
         done
