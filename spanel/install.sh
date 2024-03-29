@@ -146,6 +146,12 @@ prompt_server_ip() {
 
 
 install() {
+    debian_release=$(printf "%.0f\n" $(lsb_release -sr)) # truncate to major ver
+    debian_codename=$(lsb_release -sc)
+    if [ -z "${debian_codename}" ]; then
+        echo "Failed to get the Debian version codename using lsb_release"
+        exit 1
+    fi
     SESSION_ID=$(random_string -l 4)
     # start the config
     report_append "WWW_ROOT" $WWW_ROOT
@@ -168,6 +174,38 @@ install() {
     input "php" "Install PHP?" false
     if ${_php}; then
         input "php_psz" "Expected size of a single PHP process, in MB" 64
+        # download sury.org package list to check available PHP versions
+        wget -qO "/tmp/sury-Packages.gz" "https://packages.sury.org/php/dists/${debian_codename}/main/binary-$(dpkg --print-architecture)/Packages.gz"
+        # prompt whether additional PHP versions need to be installed
+        while true; do
+            input "php_ver" \
+            "PHP versions to install (in addition to 'latest'), space-separated" \
+            "${php_ver_checked}" \
+            "This script always installs a group of PHP extensions (cli, fpm, mysql, gd etc.) as php-*. Then, if a space-separated list of versions is provided here, the group will also be explicitly installed for each of those versions as phpX.Y-*. For example, providing '7.4 8.2' will result in having php-fpm, php-7.4-fpm and php8.2-fpm and so on installed."
+            _php_ver="${_php_ver:-$php_ver_checked}" # $_php_ver if set, else $php_ver_checked
+            php_ver_checked="" # reset on each cycle
+            php_ver_failed="" # reset on each cycle
+            for php_ver in ${_php_ver}; do # check if each provided version is installable
+                if zgrep -q "Package: php${php_ver}-common" "/tmp/sury-Packages.gz"; then
+                    php_ver_checked+="${php_ver} " # populate the list of installable
+                else
+                    php_ver_failed+="${php_ver} " # populate the list of non-installable
+                fi
+            done
+            php_ver_checked=${php_ver_checked% } # trim trailing spaces
+            php_ver_failed=${php_ver_failed% } # trim trailing spaces
+            if [ -n "${php_ver_failed}" ]; then # if at least one is non-installable
+                echo "The following PHP versions can be installed: ${php_ver_checked}"
+                echo "The following PHP versions can NOT be installed: ${php_ver_failed}"
+            else
+                break # if all provided versions are installable, break out of the loop
+            fi
+        done
+        if [ -n "${php_ver_checked}" ]; then
+            _php_ver="${php_ver_checked}"
+            echo "In addition to the latest PHP, ${_php_ver} will be installed."
+        fi
+        rm /tmp/sury-Packages.gz # clean up
     fi
     hostname_old=`hostname`
     if [ "${hostname_old}" = "" ] || [ "${hostname_old}" = "vps" ]; then
@@ -280,12 +318,6 @@ install() {
     do_install dialog
 
     header "Updating sources.list"
-    debian_release=$(printf "%.0f\n" $(lsb_release -sr)) # truncate to major ver
-    debian_codename=$(lsb_release -sc)
-    if [ -z "${debian_codename}" ]; then
-        echo "Failed to get the Debian version codename using lsb_release"
-        exit 1
-    fi
     cat /dev/null > /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename} main contrib non-free" >> /etc/apt/sources.list
     echo "deb http://httpredir.debian.org/debian ${debian_codename}-backports main contrib non-free" >> /etc/apt/sources.list
@@ -376,6 +408,11 @@ EOF
         header "Installing PHP and it's modules"
         for PHP_MOD in common cli fpm mysql curl gd mcrypt intl json bcmath imap mbstring xml opcache zip sqlite3; do
             do_install php-${PHP_MOD}
+            if [ -n "${_php_ver}" ]; then
+                for php_ver in ${_php_ver}; do
+                    do_install php${php_ver}-${PHP_MOD}
+                done
+            fi
         done
     fi
     header "Configuring the software"
@@ -580,7 +617,13 @@ location ~ /\. {
 EOF
     if ${_php}; then
         header "Configuring Nginx: PHP"
-        PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
+        if [ -S "/run/php-fpm.sock" ]; then
+            PHP_SOCK_PATH="/run/php-fpm.sock"
+        elif [ -S "/etc/alternatives/php-fpm.sock" ]; then
+            PHP_SOCK_PATH="/etc/alternatives/php-fpm.sock"
+        else
+            PHP_SOCK_PATH=$(grep -iR "\.sock" /etc/php | awk -F "= " '{print $2}')
+        fi
         cat >> /etc/nginx/snippets/vhost-common.conf << EOF
 location ~ \.php {
     if (\$suspicious = 1) {
