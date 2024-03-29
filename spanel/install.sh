@@ -20,6 +20,7 @@ input() { # try taking required variable from flags/arguments, else prompt
     NAME="${1}" # shorthand to name of requested variable; _ as word separator
     PROMPT="${2}" # shorthand to prompt text
     DEFAULT="${3}" # shorthand to default value
+    HELP="${4}" # shorthand to the help text
     if ${_noninteractive}; then
         VALUE="${DEFAULT}"
         PROMPT=""
@@ -65,7 +66,14 @@ input() { # try taking required variable from flags/arguments, else prompt
         if [ ! -z "${PROMPT_DEFAULT}" ]; then
             PROMPT_DEFAULT=" [${PROMPT_DEFAULT}]"
         fi
+        if [ ! -z "${HELP}" ]; then
+            PROMPT_DEFAULT="${PROMPT_DEFAULT} / (?)" # indicate help is available
+        fi
         read -p "${PROMPT}${PROMPT_DEFAULT}: " "VALUE" # finally, prompt
+    fi
+    if [ "_${VALUE}" = "_?" ] && [ ! -z "${HELP}" ]; then # user asked for help text
+        echo -e "\nHELP: ${HELP}"
+        input "$@"
     fi
     if [ -z "${VALUE}" ]; then # if still empty after prompt, revert to default
         VALUE="${DEFAULT}"
