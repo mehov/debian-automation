@@ -419,7 +419,9 @@ EOFALERTSCRIPT
     # enable fail2ban email notifications
     echo "action = %(action_mwl)s" >> /etc/fail2ban/jail.local
     # configure fail2ban to notify the provided e-mail
-    sed -i "s/^#* *destemail *= *[^$]*/destemail = ${_email}/" /etc/fail2ban/jail.conf
+    if [ -n "${_email}" ]; then
+        echo "destemail = ${_email}" >> /etc/fail2ban/jail.local
+    fi
 fi
 
 # nginx configuration
@@ -639,7 +641,7 @@ actionban = grep -iR "<ip>" /var/log/nginx > "/var/log/nginx-attacks/<ip>.log"
 
 ignoreregex =
 EOF
-    cat >> /etc/fail2ban/jail.local << EOF
+    cat >> /etc/fail2ban/jail.d/${NW_PREF}.local << EOF
 [${NW_PREF}]
 enabled = true
 filter = ${NW_PREF}
@@ -888,7 +890,7 @@ if ${_nopass}; then
     # lower the tolerance for failed attempts if no password is used
     SSH_MAXRETRY=2
 fi
-cat >> /etc/fail2ban/jail.local << EOF
+cat >> /etc/fail2ban/jail.d/sshd.local << EOF
 [sshd]
 enabled = true
 mode = aggressive
@@ -921,7 +923,7 @@ failregex = ${HP_PREF} .* SRC=<HOST>
 
 ignoreregex =
 EOF
-    cat >> /etc/fail2ban/jail.local << EOF
+    cat >> /etc/fail2ban/jail.d/${HP_PREF}.local << EOF
 [${HP_PREF}]
 enabled = true
 filter = ${HP_PREF}
