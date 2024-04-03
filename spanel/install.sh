@@ -873,6 +873,10 @@ if ${_noroot}; then
     useradd -s /bin/bash -md "${DIR_HOME}" -g sudo ${_ssh_user}
     # Also add to the group "www-data"
     usermod -a -G www-data ${_ssh_user}
+    # Prompt and set the password for the user (used in e.g. emergency console)
+    input "ssh_password" "Password for ${_ssh_user}" "$(random_string -l 16)"
+    echo "${_ssh_user}:${_ssh_password}" | sudo chpasswd
+    report_append "SSH_PASS" "${_ssh_password}"
     # Create SSH keys for ${_ssh_user}
     if [ ! -d "${DIR_HOME}/.ssh" ]; then
         mkdir -p "${DIR_HOME}/.ssh"
@@ -918,9 +922,6 @@ if ${_nopass}; then
 else
     # Enable password authentication
     sed -i 's/^\s*#\?\s*PasswordAuthentication\s\+\w\+/PasswordAuthentication yes/' /etc/ssh/sshd_config
-    # Prompt and set the password for the user
-    input "ssh_password" "Password for ${_ssh_user}" "$(random_string -l 16)"
-    echo "${_ssh_user}:${_ssh_password}" | sudo chpasswd
 fi
 chown -R ${_ssh_user}:sudo "${DIR_HOME}"
 # https://infosec-handbook.eu/blog/wss1-basic-hardening/#s3
