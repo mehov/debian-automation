@@ -795,12 +795,12 @@ case "${1}" in
         ALERT_TO_MX=$(dig +short "${ALERT_TO_HOST}" mx | sort -n | nawk '{print $2; exit}' | sed -e 's/\.$//')
         # sender domain being ALERT_TO_HOST prevents rejections per DMARC policy
         # sender user account being `hostname` identifies the sending server
-        ALERT_FROM="$(hostname)@$(hostname -i)"
+        ALERT_FROM="$(hostname)@$(hostname -I)"
         # save the MX record to nullmailer's config
         printf "${ALERT_TO_MX}" > /etc/nullmailer/remotes
         # prepend date and server information
         PREPEND=""
-        PREPEND="${PREPEND}Server IP: $(hostname -i)\n"
+        PREPEND="${PREPEND}Server IP: $(hostname -I)\n"
         PREPEND="${PREPEND}Server Hostname: $(hostname)\n"
         PREPEND="${PREPEND}Date: $(LC_ALL=C date +"%a, %d %h %Y %T %z")\n"
         ALERT_TEXT="${PREPEND}\n${ALERT_TEXT}"

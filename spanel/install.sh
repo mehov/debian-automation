@@ -1031,7 +1031,7 @@ echo "**** The server will reboot."
 
 if [ -n "${_email}" ]; then
     header "Sending welcome e-mail"
-    spanel alert "Welcome! $(hostname -i) is ready" "$(cat /root/.bonjour.ini)"
+    spanel alert "Welcome! ${_server_ip} is ready" "$(cat /root/.bonjour.ini)"
 fi
 
 reboot
