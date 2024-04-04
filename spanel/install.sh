@@ -1021,25 +1021,21 @@ chmod +x /etc/network/if-up.d/iptables
 
 header "Clean up"
 apt-get -y autoremove
-header "Self-destruct"
 rm $0
-
-echo "**** All done."
-echo "**** Reminder: the new SSH port is: ${_ssh_port}"
-echo "     (make sure to allow it with your AWS/GCP/etc. firewall)"
-echo "**** The server will reboot."
-
-if [ -n "${_email}" ]; then
-    header "Sending welcome e-mail"
-    spanel alert "Welcome! ${_server_ip} is ready" "$(cat /root/.bonjour.ini)"
-fi
-
-reboot
 }
 
 case "$1" in
     install)
         install ${@}
+        if [ -n "${_email}" ]; then
+            header "Sending welcome e-mail"
+            spanel alert "Welcome! ${_server_ip} is ready" "$(cat /root/.bonjour.ini)"
+        fi
+        echo "**** All done."
+        echo "**** Reminder: the new SSH port is: ${_ssh_port}"
+        echo "     (make sure to allow it with your AWS/GCP/etc. firewall)"
+        echo "**** The server will reboot."
+        reboot
         ;;
     *)
         input "start" "Using this is your own risk and responsibility" true
