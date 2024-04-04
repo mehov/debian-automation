@@ -1036,8 +1036,11 @@ case "$1" in
         echo "**** All done."
         echo "**** Reminder: the new SSH port is: ${_ssh_port}"
         echo "     (make sure to allow it with your AWS/GCP/etc. firewall)"
-        echo "**** The server will reboot."
-        reboot
+        input "reboot" "" true
+        if ${_reboot}; then
+            echo "**** The server will reboot."
+            reboot
+        fi
         ;;
     *)
         input "start" "Using this is your own risk and responsibility" true
