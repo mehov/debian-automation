@@ -1031,6 +1031,8 @@ case "$1" in
             header "Sending welcome e-mail"
             spanel alert "Welcome! ${_server_ip} is ready" "$(cat /root/.bonjour.ini)"
         fi
+        header "Configuration summary" # shown when installing not in screen
+        cat /root/.bonjour.ini
         echo "**** All done."
         echo "**** Reminder: the new SSH port is: ${_ssh_port}"
         echo "     (make sure to allow it with your AWS/GCP/etc. firewall)"
@@ -1047,7 +1049,7 @@ case "$1" in
                 exit
             fi
             "${BIN_SCREEN}" -S "spanel" bash "${0}" install ${@}
-            header "Configuration summary"
+            header "Configuration summary" # shown after install done in screen
             cat /root/.bonjour.ini
         else
             echo "Aborted."
