@@ -101,6 +101,14 @@ ini_get() {
         return 0
     fi
 }
+ini_set() {
+    PATH_INI="/root/.bonjour.ini"
+    BIN_CRUDINI=$(which crudini)
+    if [ -n "${BIN_CRUDINI}" ]; then
+        echo $(${BIN_CRUDINI} --set ${PATH_INI} "${3}" "${1}" "${2}") # "section" "key" "value"
+        return 0
+    fi
+}
 
 ### Script params
 CERTBOT_PATH=$(ini_get "CERTBOT_PATH")
