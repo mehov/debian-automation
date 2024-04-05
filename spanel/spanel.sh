@@ -608,34 +608,109 @@ manage_trusted_ips() {
     echo "Fail2Ban set to ignore '${F2B_IPS_NEW}'"
 }
 
-backup_user_add() {
-    # generate the backup user account name
-    BACKUSER_DEFAULT="backup$(date -u "+%N" | cut -c 1,2,4,8)"
-    # prompt for the backup user account name
-    read -p "Backup user account name [${BACKUSER_DEFAULT}]: " BACKUSER
-    if [ -z "${BACKUSER}" ]; then
-        BACKUSER=${BACKUSER_DEFAULT}
+# Receives user@host[:port] and sets it up as a backup destination
+backup_add() {
+    input "destination" "Backup destination in user@host[:port] format"
+    # The :22 ensures predictable behaviour; see unix.stackexchange.com/a/465596
+    destination_userhost=$(echo "${_destination}:22" | cut -f1 -sd:)
+    destination_port=$(echo "${_destination}:22" | cut -f2 -sd:)
+    # Test if we can SSH into the destination server
+    ssh -p "${destination_port}" "${destination_userhost}" exit
+    destination_check=$? # shorthand
+    if [ ${destination_check} -ne 0 ]; then
+        echo "Can not SSH into the backup destination ${destination_userhost} on port ${destination_port}"
+        exit
     fi
-    # store their home folder in a variable
-    BACKHOME="/home/${BACKUSER}"
-    # get the gnu rush path
-    PATHRUSH=$(which rush)
-    # add the backup user
-    echo "Creating user ${BACKUSER}"
-    useradd -md "${BACKHOME}" -g www-data -s ${PATHRUSH} ${BACKUSER}
-    # allow the user with ssh - but only if AllowUsers is actually being used
-    sed -i "s/^ *AllowUsers [^$]*/& ${BACKUSER}/" /etc/ssh/sshd_config
-    # create their .ssh folder
-    mkdir -p "${BACKHOME}/.ssh"
-    # prompt for the authorized key
-    read -p "A public key from the backup server: " BACKKEY
-    # save the authorized key
-    echo ${BACKKEY} > "${BACKHOME}/.ssh/authorized_keys"
-    # restart sshd
+    # Test if rsnapshot is available on the destination server
+    ssh -p "${destination_port}" "${destination_userhost}" "command -v rsnapshot >/dev/null 2>&1"
+    destination_rsnapshot_check=$? # shorthand
+    if [ ${destination_rsnapshot_check} -ne 0 ]; then
+        echo "Make sure rsnapshot is installed on the destination server"
+        exit
+    fi
+    # Convert to ASCII so that it can serve as a key in an INI file
+    destination_hexadecimal=$(echo -n "${_destination}" | od -A n -t x1 | tr -d ' \n')
+    # Local restricted user on this machine the destination server will SSH into
+    _backup_user=$(ini_get "${destination_hexadecimal}" "backup") # check if already defined
+    if [ -z "${_backup_user}" ]; then
+        input "backup_user" "Local user account" \
+        "bkup$(date -u "+%N" | cut -c 1,2,4,8)" \
+        "Local account for the backup destination server to SSH into"
+        ini_set "${destination_hexadecimal}" "${_backup_user}" "backup"
+    else
+        echo "Local user account for ${_destination} is ${_backup_user}"
+    fi
+    backup_user_home="/home/${_backup_user}"
+    if ! id "${_backup_user}" >/dev/null 2>&1; then
+        echo "Creating user ${_backup_user}"
+        useradd -md "${backup_user_home}" -g www-data -s "$(which rush)" "${_backup_user}"
+    else
+        echo "User ${_backup_user} exists"
+    fi
+    # Set up SSH access for the backup user
+    #sed -i "s/AllowUsers [^$]*/& ${_backup_user}/" /etc/ssh/sshd_config
+    grep -qE "AllowUsers .*${_backup_user}(\$|\\s)" /etc/ssh/sshd_config \
+        || sed -i "/AllowUsers/s/\$/ ${_backup_user}/" /etc/ssh/sshd_config
+
+    mkdir -p "${backup_user_home}/.ssh"
+    touch "${backup_user_home}/.ssh/authorized_keys"
+    # Authorise destination server public key here with the local backup user
+    input "destination_identity" "Path to the private key on the destination server" "~/.ssh/id_rsa"
+    # Check if the given key exists on the destination server
+    ssh -p "${destination_port}" "${destination_userhost}" "[ -e ${_destination_identity} ]"
+    if [ ${?} -ne 0 ]; then
+        echo "Key ${_destination_identity} does not exist on ${_destination}"
+        exit 2
+    fi
+    # Try to read the contents of the public key into a variable
+    destination_pubkey_content=$(ssh -p "${destination_port}" \
+        "${destination_userhost}" "cat ${_destination_identity}.pub")
+    # Validate the public key
+    echo "${destination_pubkey_content}" | ssh-keygen -l -f - 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo -e "The public key in ${_destination_identity}.pub is not valid"
+        exit 2
+    fi
+    # Append public key to backup user's authorized_keys if it's not there yet
+    grep -qE "${destination_pubkey_content}" "${backup_user_home}/.ssh/authorized_keys" \
+        || echo "${destination_pubkey_content}" >> "${backup_user_home}/.ssh/authorized_keys"
+    # Allowing destination server IP to connect to SSH on this machine
+    manage_trusted_ips "$(echo "${destination_userhost}" | cut -d'@' -f2)" "add"
+    # Restart the ssh
     service sshd restart
-    # trust backup server IP address
-    read -p "Backup server IP address: " BACKADDR
-    manage_trusted_ips "${BACKADDR}" "add"
+    # Shorthand
+    this_port=$(ini_get SSH_PORT)
+    this_host=$(hostname -I | xargs) # xargs to trim whitespace
+    # Add this machine to destination server known_hosts
+    ssh -p "${destination_port}" "${destination_userhost}" \
+        "ssh-keyscan -p ${this_port} ${this_host} >> ~/.ssh/known_hosts"
+    # Configure SSH connections to this machine
+    ssh -p "${destination_port}" "${destination_userhost}" \
+        "printf \"Host ${this_host}\nPort ${this_port}\nIdentityFile ${_destination_identity}\n\n\" >> ~/.ssh/config"
+    # Configure rsnapshot on the destination server
+    destination_user=$(echo "${destination_userhost}" | cut -d'@' -f1)
+    ssh -p "${destination_port}" "${destination_userhost}" << EOF
+# set cron to run backups as the non-root user
+sudo sed -i "s|root|${destination_user}|g" /etc/cron.d/rsnapshot
+# enable sample schedule
+sudo sed -i 's|^#\s*\([0-9*]\)|\1|' /etc/cron.d/rsnapshot
+# uncomment and enable cmd_ssh
+sudo sed -i "s|#@CMD_SSH@\t|@CMD_SSH@	|g" /etc/rsnapshot.conf
+sudo sed -i "s|#cmd_ssh\t|cmd_ssh	|g" /etc/rsnapshot.conf
+# set the backup storage folder to be /var/backups/rsnapshot
+sudo sed -i "s|snapshot_root\t\(.*\)|snapshot_root	/var/backups/rsnapshot|g" /etc/rsnapshot.conf
+# set up logging and lockfile
+sudo mkdir -p "/var/log/rsnapshot" "/var/run/rsnapshot" "/var/backups/rsnapshot"
+sudo chown -R "${destination_user}" "/var/log/rsnapshot" "/var/run/rsnapshot" "/var/backups/rsnapshot"
+sudo sed -i "s|^\(#\?\)logfile\t.*|logfile\t/var/log/rsnapshot/rsnapshot.log|g" /etc/rsnapshot.conf
+sudo sed -i "s|^\(#\?\)lockfile\t.*|lockfile\t/var/run/rsnapshot/rsnapshot.pid|g" /etc/rsnapshot.conf
+# comment out existing backup rules
+sudo sed -i "s|^backup\t|#backup	|g" /etc/rsnapshot.conf
+# set up our own backup rules
+echo "backup	${_backup_user}@${this_host}:/var/www	${this_host}/" | sudo tee -a /etc/rsnapshot.conf
+echo "backup	${_backup_user}@${this_host}:/var/backups/mysql	${this_host}/" | sudo tee -a /etc/rsnapshot.conf
+echo "backup	${_backup_user}@${this_host}:/etc	${this_host}/" | sudo tee -a /etc/rsnapshot.conf
+EOF
 }
 
 # always make sure this script is executable (for e.g. cron)
@@ -730,7 +805,7 @@ case "${1}" in
         manage_trusted_ips "${2}" "remove"
         ;;
     "backup")
-        backup_user_${2}
+        backup_${2}
         ;;
     "update")
         VAR_JSON="/tmp/spanel.json"
