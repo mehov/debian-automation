@@ -614,11 +614,12 @@ backup_add() {
     # The :22 ensures predictable behaviour; see unix.stackexchange.com/a/465596
     destination_userhost=$(echo "${_destination}:22" | cut -f1 -sd:)
     destination_port=$(echo "${_destination}:22" | cut -f2 -sd:)
+    destination_user=$(echo "${destination_userhost}" | cut -d'@' -f1)
     # Test if we can SSH into the destination server
     ssh -p "${destination_port}" "${destination_userhost}" exit
     destination_check=$? # shorthand
     if [ ${destination_check} -ne 0 ]; then
-        echo "Can not SSH into the backup destination ${destination_userhost} on port ${destination_port}"
+        printf "\nCan not SSH into ${destination_userhost} on port ${destination_port}. Make sure:\n- either PasswordAuthentication is enabled, or\n- this server's public key is added to ${destination_user}'s authorized_keys, normally /home/${destination_user}/.ssh/authorized_keys\n\nThe public key is:\n$(cat ~/.ssh/id_rsa.pub)\n"
         exit
     fi
     # Test if rsnapshot is available on the destination server
@@ -684,11 +685,10 @@ backup_add() {
     # Add this machine to destination server known_hosts
     ssh -p "${destination_port}" "${destination_userhost}" \
         "ssh-keyscan -p ${this_port} ${this_host} >> ~/.ssh/known_hosts"
-    # Configure SSH connections to this machine
+    # Pre-configure SSH connections to this machine on the destination server
     ssh -p "${destination_port}" "${destination_userhost}" \
         "printf \"Host ${this_host}\nPort ${this_port}\nIdentityFile ${_destination_identity}\n\n\" >> ~/.ssh/config"
     # Configure rsnapshot on the destination server
-    destination_user=$(echo "${destination_userhost}" | cut -d'@' -f1)
     ssh -p "${destination_port}" "${destination_userhost}" << EOF
 # set cron to run backups as the non-root user
 sudo sed -i "s|root|${destination_user}|g" /etc/cron.d/rsnapshot
