@@ -713,11 +713,6 @@ echo "backup	${_backup_user}@${this_host}:/etc	${this_host}/" | sudo tee -a /etc
 EOF
 }
 
-# always make sure this script is executable (for e.g. cron)
-if [ ! -x "${0}" ]; then
-    chmod +x "${0}"
-fi
-
 manage_http_basic_auth() {
     # prepare the variables
     WEBROOT=$(pwd)
@@ -772,6 +767,11 @@ manage_http_basic_auth() {
     fi
     service nginx restart
 }
+
+# always make sure this script is executable (for e.g. cron)
+if [ ! -x "${0}" ]; then
+    chmod +x "${0}"
+fi
 
 echo "ACTION: ${1}"
 ### What to do?
