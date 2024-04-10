@@ -644,7 +644,7 @@ backup_add() {
     backup_user_home="/home/${_backup_user}"
     if ! id "${_backup_user}" >/dev/null 2>&1; then
         echo "Creating user ${_backup_user}"
-        useradd -md "${backup_user_home}" -g www-data -s "$(which rush)" "${_backup_user}"
+        useradd -md "${backup_user_home}" -g www-data -s /bin/bash "${_backup_user}"
     else
         echo "User ${_backup_user} exists"
     fi
@@ -674,7 +674,7 @@ backup_add() {
     fi
     # Append public key to backup user's authorized_keys if it's not there yet
     grep -qE "${destination_pubkey_content}" "${backup_user_home}/.ssh/authorized_keys" \
-        || echo "${destination_pubkey_content}" >> "${backup_user_home}/.ssh/authorized_keys"
+        || echo "command=\"$(which rrsync) -ro /\",no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding ${destination_pubkey_content}" >> "${backup_user_home}/.ssh/authorized_keys"
     # Allowing destination server IP to connect to SSH on this machine
     manage_trusted_ips "$(echo "${destination_userhost}" | cut -d'@' -f2)" "add"
     # Restart the ssh
