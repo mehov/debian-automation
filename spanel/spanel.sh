@@ -762,7 +762,6 @@ backup_run() {
         fi
         timestamp_file="${source}/.backup_timestamp"
         echo "${timestamp}" > "${timestamp_file}"
-        echo "timestamp" > "${timestamp_file}2"
     done
     this_host=$(hostname -I | xargs)
     # Have each destination run the backup
