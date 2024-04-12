@@ -738,7 +738,7 @@ backup_run() {
     fi
     touch "${lockfile}"
     # Skip database back up if it is stopped or not installed
-    if service mysql status > /dev/null; then
+    if /usr/sbin/service mysql status > /dev/null; then
         rm -rf "/var/backups/mysql" # make sure backups are always new
         $(which mariabackup) --backup --target-dir="/var/backups/mysql" \
             --user=root --password=$(ini_get MYSQL_ROOT_PASS) > "/var/log/mariabackup.log" 2>&1
