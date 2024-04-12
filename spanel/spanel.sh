@@ -698,6 +698,8 @@ backup_add() {
 sudo sed -i "s|root|${destination_user}|g" /etc/cron.d/rsnapshot
 # enable sample schedule
 sudo sed -i 's|^#\s*\([0-9*]\)|\1|' /etc/cron.d/rsnapshot
+# delete first rule (that actually does backups) as it will be triggered externally
+sudo sed -i '/ alpha\$/d' /etc/cron.d/rsnapshot
 # uncomment and enable cmd_ssh
 sudo sed -i "s|#@CMD_SSH@\t|@CMD_SSH@	|g" /etc/rsnapshot.conf
 sudo sed -i "s|#cmd_ssh\t|cmd_ssh	|g" /etc/rsnapshot.conf
@@ -710,11 +712,90 @@ sudo sed -i "s|^\(#\?\)logfile\t.*|logfile\t/var/log/rsnapshot/rsnapshot.log|g" 
 sudo sed -i "s|^\(#\?\)lockfile\t.*|lockfile\t/var/run/rsnapshot/rsnapshot.pid|g" /etc/rsnapshot.conf
 # comment out existing backup rules
 sudo sed -i "s|^backup\t|#backup	|g" /etc/rsnapshot.conf
-# set up our own backup rules
-echo "backup	${_backup_user}@${this_host}:/var/www	${this_host}/" | sudo tee -a /etc/rsnapshot.conf
-echo "backup	${_backup_user}@${this_host}:/var/backups/mysql	${this_host}/" | sudo tee -a /etc/rsnapshot.conf
-echo "backup	${_backup_user}@${this_host}:/etc	${this_host}/" | sudo tee -a /etc/rsnapshot.conf
+# set up our own backup rules specific to this host
+sudo mkdir -p /etc/rsnapshot.d
+sudo tee "/etc/rsnapshot.d/${this_host}.conf" > /dev/null << RSHEOF
+include_conf	/etc/rsnapshot.conf
+backup	${_backup_user}@${this_host}:/var/www	${this_host}/
+backup	${_backup_user}@${this_host}:/var/backups/mysql	${this_host}/
+backup	${_backup_user}@${this_host}:/etc	${this_host}/
+RSHEOF
 EOF
+}
+
+backup_run() {
+    destinations=$(ini_get "" "backup")
+    if [ -z "${destinations}" ]; then
+        echo "No backup destinations defined"
+        exit 0
+    fi
+    # Lockfile prevents new backup starting before previous one finishes
+    lockfile="/tmp/backup.lock"
+    if [ -f "${lockfile}" ] && [ -z "$(find ${lockfile} -mmin +60)" ]; then
+        echo "Lockfile ${lockfile} exists and is not older than 1 hour. Aborting."
+        spanel alert "Backup" "${lockfile} prevents another backup"
+        exit 0
+    fi
+    touch "${lockfile}"
+    # Skip database back up if it is stopped or not installed
+    if service mysql status > /dev/null; then
+        rm -rf "/var/backups/mysql" # make sure backups are always new
+        $(which mariabackup) --backup --target-dir="/var/backups/mysql" \
+            --user=root --password=$(ini_get MYSQL_ROOT_PASS) > "/var/log/mariabackup.log" 2>&1
+        # Change ownership so that the backup user can read the folder
+        chgrp -R www-data "/var/backups/mysql"
+        chmod -R g+rx "/var/backups/mysql"
+    else
+        echo "Database not running; skipping"
+    fi
+
+    # The current timestamp used to determine how recent is backup
+    timestamp=$(date -R)
+    # Directories to back up
+    sources="/etc /var/www /var/backups/mysql"
+    # Go through each directory
+    for source in ${sources}; do
+        # Skip if a given directory does not exist on this server
+        if [ ! -d "${source}" ]; then
+            echo "Directory ${source} does not exist; skipping"
+            continue
+        fi
+        timestamp_file="${source}/.backup_timestamp"
+        echo "${timestamp}" > "${timestamp_file}"
+        echo "timestamp" > "${timestamp_file}2"
+    done
+    this_host=$(hostname -I | xargs)
+    # Have each destination run the backup
+    for destination_hex in ${destinations}; do
+        # Decode the hexadecimal representation into user@host[:port]
+        destination=$(echo -e $(echo -n "${destination_hex}" | sed 's/../\\x&/g'))
+        echo "Starting backup to ${destination}"
+        # The :22 ensures predictable behaviour; see unix.stackexchange.com/a/465596
+        destination_userhost=$(echo "${destination}:22" | cut -f1 -sd:)
+        destination_port=$(echo "${destination}:22" | cut -f2 -sd:)
+        # Actually trigger the backup
+        ssh -p "${destination_port}" "${destination_userhost}" \
+            "/usr/bin/rsnapshot -c \"/etc/rsnapshot.d/${this_host}.conf\" alpha"
+        # Check the timestamps
+        for source in ${sources}; do
+            # Skip if a given directory does not exist on this server
+            if [ ! -d "${source}" ]; then
+                continue
+            fi
+            remote_timestamp_file="/var/backups/rsnapshot/alpha.0/${this_host}${source}/.backup_timestamp"
+            remote_timestamp=$(ssh -p "${destination_port}" "${destination_userhost}" "cat ${remote_timestamp_file}")
+            if [ "_${remote_timestamp}" != "_${timestamp}" ]; then
+                spanel alert "Backup timestamp mismatch" "Timestamp in ${source} does not match ${remote_timestamp_file} on ${destination_userhost}"
+                echo "Timestamp in ${source} does not match ${remote_timestamp_file} on ${destination_userhost}"
+            fi
+        done
+    done
+    # Clean up
+    rm "${timestamp_file}"
+    if [ -d "/var/backups/mysql" ]; then
+        rm -rf "/var/backups/mysql"
+    fi
+    rm "${lockfile}"
 }
 
 manage_http_basic_auth() {
