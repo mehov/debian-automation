@@ -87,12 +87,16 @@ input "noninteractive" "" false # never prompt; false by default, true if passed
 
 ini_get() {
     PATH_INI="/root/.bonjour.ini"
-    if ! grep -q "^${1} *= *" "${PATH_INI}"; then
+    if ! grep -q "^${1} *= *" "${PATH_INI}" && [ -z "${2}" ]; then
         return 1
     fi
     BIN_CRUDINI=$(which crudini)
     if [ -n "${BIN_CRUDINI}" ]; then
-        echo $(${BIN_CRUDINI} --get ${PATH_INI} "${2}" "${1}") # "section" "key"
+        if [ -z "${1}" ] && [ ! -z "${2}" ]; then
+            echo $(${BIN_CRUDINI} --get ${PATH_INI} "${2}") # "section" only
+        else
+            echo $(${BIN_CRUDINI} --get ${PATH_INI} "${2}" "${1}") # "section" "key"
+        fi
         return 0
     fi
     BIN_CFGET=$(which cfget)
