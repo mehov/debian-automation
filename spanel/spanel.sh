@@ -876,9 +876,8 @@ case "${1}" in
         ALERT_TO_HOST=$(echo "${ALERT_TO}" | awk -F "@" '{print $2}')
         # read it's MX address record
         ALERT_TO_MX=$(dig +short "${ALERT_TO_HOST}" mx | sort -n | nawk '{print $2; exit}' | sed -e 's/\.$//')
-        # sender domain being ALERT_TO_HOST prevents rejections per DMARC policy
         # sender user account being `hostname` identifies the sending server
-        ALERT_FROM="$(hostname)@$(hostname -I)"
+        ALERT_FROM="$(hostname)@$(hostname -I | xargs)"
         # save the MX record to nullmailer's config
         printf "${ALERT_TO_MX}" > /etc/nullmailer/remotes
         # prepend date and server information
