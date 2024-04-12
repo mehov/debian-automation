@@ -824,6 +824,9 @@ if ${_certbot}; then
     echo "0 4 1,15 * * root ${HOSTMANAGER_PATH} certupdate >> /var/log/certupdate.log 2>&1" > /etc/cron.d/certupdate
 fi
 
+header "Scheduling backups"
+echo "*/15 * * * * root ${HOSTMANAGER_PATH} backup run >> /var/log/backup.log 2>&1" > /etc/cron.d/backup
+
 header "Configuring SSH"
 # create root SSH key if needed
 if [ ! -d "$HOME/.ssh" ]; then
