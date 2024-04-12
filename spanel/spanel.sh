@@ -791,9 +791,6 @@ backup_run() {
     done
     # Clean up
     rm "${timestamp_file}"
-    if [ -d "/var/backups/mysql" ]; then
-        rm -rf "/var/backups/mysql"
-    fi
     rm "${lockfile}"
 }
 
