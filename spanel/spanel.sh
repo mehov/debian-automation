@@ -751,6 +751,7 @@ backup_run() {
 
     # The current timestamp used to determine how recent is backup
     timestamp=$(date -R)
+    echo "Timestamp: ${timestamp}"
     # Directories to back up
     sources="/etc /var/www /var/backups/mysql"
     # Go through each directory
