@@ -400,7 +400,7 @@ EOF
     if ${_mysql}; then
         header "Installing MariaDB"
         do_install mariadb-server
-        do_install mariabackup
+        do_install mariadb-backup
         systemctl enable mariadb
         service mysql stop
     fi
