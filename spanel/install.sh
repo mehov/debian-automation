@@ -365,6 +365,7 @@ EOF
     do_install systemd
     do_install curl
     do_install vim
+    do_install screen
     do_install unzip
     do_install bc
     do_install crudini
@@ -1034,14 +1035,20 @@ case "$1" in
     *)
         input "start" "Using this is your own risk and responsibility" true
         if ${_start}; then
-            do_install screen
-            BIN_SCREEN=$(which screen)
-            if [ -z "${BIN_SCREEN}" ]; then
-                echo "Screen is required but not installed"
-                exit
+            input "screen" "Run installation inside 'screen'?" true \
+            "Screen is a utility that can run the installation inside a virtual terminal session. This allows disconnecting from SSH without interrupting the installation. (Make sure you first detach from the screen session by pressing 'Ctrl'+'a' followed by 'd'.) The installation will complete in the background."
+            if ${_screen}; then
+                do_install screen # install screen prematurely
+                BIN_SCREEN=$(which screen)
+                if [ -z "${BIN_SCREEN}" ]; then
+                    echo "Screen is required but not installed"
+                    exit
+                fi
+                "${BIN_SCREEN}" -S "spanel" bash "${0}" install ${@}
+            else
+                bash "${0}" install ${@}
             fi
-            "${BIN_SCREEN}" -S "spanel" bash "${0}" install ${@}
-            header "Configuration summary" # shown after install done in screen
+            header "Configuration summary" # shown after completing installation
             cat /root/.bonjour.ini
         else
             echo "Aborted."
