@@ -155,7 +155,6 @@ install() {
     SESSION_ID=$(random_string -l 4)
     # start the config
     report_append "WWW_ROOT" $WWW_ROOT
-    input "noninteractive" "" false # never prompt; false by default, true if passed
     # make sure we know the IP address of this server
     do_install dnsutils
     prompt_server_ip
@@ -1011,6 +1010,8 @@ header "Clean up"
 apt-get -y autoremove
 rm $0
 }
+
+input "noninteractive" "" false # never prompt; false by default, true if passed
 
 case "$1" in
     install)
