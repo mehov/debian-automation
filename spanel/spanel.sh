@@ -217,14 +217,6 @@ add() {
             secondlvldomain=`echo $HOST | cut -d "." -f 1`
             input "user_name" "FTP/UNIX user" "www-usr-${secondlvldomain}"
             input "user_password" "Password for '${_user_name}'" `random_string -l 16`
-            cppassword=$(perl -e 'print crypt($ARGV[0], "password")' ${_user_password})
-            if id -u ${_user_name} >/dev/null 2>&1; then
-                pkill -u ${_user_name}
-                killall -9 -u ${_user_name}
-                usermod --password=${cppassword} --home="${_dir}" ${_user_name}
-            else
-                useradd -d "${_dir}" -p ${cppassword} -g www-data -s /bin/sh -M ${_user_name}
-            fi
         fi
     fi
     # Adding
@@ -379,6 +371,16 @@ EOF
             else
                 echo "done."
             fi
+        fi
+    fi
+    if [ -n "$(ini_get FTP_PORT)" ] && ${_user}; then
+        cppassword=$(perl -e 'print crypt($ARGV[0], "password")' ${_user_password})
+        if id -u ${_user_name} >/dev/null 2>&1; then
+            pkill -u ${_user_name}
+            killall -9 -u ${_user_name}
+            usermod --password=${cppassword} --home="${_dir}" ${_user_name}
+        else
+            useradd -d "${_dir}" -p ${cppassword} -g www-data -s /bin/sh -M ${_user_name}
         fi
     fi
     chown -R $(ini_get "SSH_USER") "${_dir_public}"
