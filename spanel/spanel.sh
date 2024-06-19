@@ -307,7 +307,7 @@ EOF
         printf "Requesting a certificate from Let's Encrypt:\n"
         printf " - email:   ${letsencrypt_email}\n"
         printf " - domains: ${domains}\n"
-        letsencrypt_args="--agree-tos --standalone --http-01-port 8008 --email \"${letsencrypt_email}\" -d \"${domains}\""
+        letsencrypt_args="--agree-tos --standalone --http-01-port 8008 --email ${letsencrypt_email} -d ${domains}"
         echo "${CERTBOT_PATH} certonly --non-interactive ${letsencrypt_args}"
         "${CERTBOT_PATH}" certonly --non-interactive ${letsencrypt_args}
         if [ ! -r "${_ssl_certificate_dir}/fullchain.pem" ] || [ ! -r "${_ssl_certificate_dir}/privkey.pem" ]; then
