@@ -240,6 +240,9 @@ install() {
     if ${_noroot}; then
         input "ssh_user" "SSH non-root user" "admin"
         report_append "SSH_USER" ${_ssh_user}
+        # Prompt and set the password for the user (used in e.g. emergency console)
+        input "ssh_password" "Password for ${_ssh_user}" "$(random_string -l 16)"
+        report_append "SSH_PASS" "${_ssh_password}"
     fi
 
     input "ssh_port" "SSH port" ${PORT_SSH_DEFAULT}
@@ -862,10 +865,7 @@ if ${_noroot}; then
     useradd -s /bin/bash -md "${DIR_HOME}" -g sudo ${_ssh_user}
     # Also add to the group "www-data"
     usermod -a -G www-data ${_ssh_user}
-    # Prompt and set the password for the user (used in e.g. emergency console)
-    input "ssh_password" "Password for ${_ssh_user}" "$(random_string -l 16)"
     echo "${_ssh_user}:${_ssh_password}" | sudo chpasswd
-    report_append "SSH_PASS" "${_ssh_password}"
     # Create SSH keys for ${_ssh_user}
     if [ ! -d "${DIR_HOME}/.ssh" ]; then
         mkdir -p "${DIR_HOME}/.ssh"
