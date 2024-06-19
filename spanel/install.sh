@@ -234,7 +234,19 @@ install() {
         _whitelisted_ips=""
     fi
 
-    input "nopass" "Use your public SSH key instead of password-based authentication? You'll need to paste your SSH key at the end of this setup so that the server lets you in next time you connect" true
+    input "nopass" "Use your public SSH key instead of password-based authentication?" true
+    if ${_nopass}; then
+        prompt_pubkey() {
+            read -p "Please paste your public key here: " SSH_USER_PUBKEY
+            echo "${SSH_USER_PUBKEY}" | ssh-keygen -l -f - 2>/dev/null
+            if [ $? -ne 0 ]; then
+                echo -e "The public key you provided is not valid.\n"
+                prompt_pubkey
+            fi
+        }
+        prompt_pubkey
+    fi
+
 
     input "noroot" "Disable direct root login? Using a non-root account and switching to root only when needed is more secure. Choosing 'n' will keep the direct root login" true
     if ${_noroot}; then
@@ -898,15 +910,6 @@ if ${_nopass}; then
     sed -i "s/#PubkeyAuthentication/PubkeyAuthentication/g" /etc/ssh/sshd_config
     sed -i "s/PubkeyAuthentication no/PubkeyAuthentication yes/g" /etc/ssh/sshd_config
     mkdir -p "${DIR_HOME}/.ssh"
-    prompt_pubkey() {
-        read -p "Please paste your public key here: " SSH_USER_PUBKEY
-        echo "${SSH_USER_PUBKEY}" | ssh-keygen -l -f - 2>/dev/null
-        if [ $? -ne 0 ]; then
-            echo -e "The public key you provided is not valid.\n"
-            prompt_pubkey
-        fi
-    }
-    prompt_pubkey
     echo "${SSH_USER_PUBKEY} ${_ssh_user}" >> "${DIR_HOME}"/.ssh/authorized_keys
 else
     # Enable password authentication
