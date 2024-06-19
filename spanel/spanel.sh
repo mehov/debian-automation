@@ -307,15 +307,16 @@ EOF
         printf "Requesting a certificate from Let's Encrypt:\n"
         printf " - email:   ${letsencrypt_email}\n"
         printf " - domains: ${domains}\n"
-        echo "${CERTBOT_PATH} certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email \"${letsencrypt_email}\" -d \"${domains}\""
-        "${CERTBOT_PATH}" certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email "${letsencrypt_email}" -d "${domains}"
+        letsencrypt_args="--agree-tos --standalone --http-01-port 8008 --email \"${letsencrypt_email}\" -d \"${domains}\""
+        echo "${CERTBOT_PATH} certonly --non-interactive ${letsencrypt_args}"
+        "${CERTBOT_PATH}" certonly --non-interactive ${letsencrypt_args}
         if [ ! -r "${_ssl_certificate_dir}/fullchain.pem" ] || [ ! -r "${_ssl_certificate_dir}/privkey.pem" ]; then
             printf "\n"
             echo "Certificate couldn't be issued, ${HOST} not added."
             input "letsencrypt_debug" "Debug Let's Encrypt challenges?" true \
             "Re-run certbot with --debug-challenges flag, which stops it after creating the challenge files. The files will remain available for you to manually check if they're accessible and fix connectivity issues, if any. Once ready, stop the process with Ctrl+C and try adding ${HOST} again."
             if ${_letsencrypt_debug}; then
-                "${CERTBOT_PATH}" certonly --debug-challenges -v --agree-tos --standalone --http-01-port 8008 --email "${letsencrypt_email}" -d "${domains}"
+                "${CERTBOT_PATH}" certonly --debug-challenges -v ${letsencrypt_args}
             fi
             echo "Removing ${conf_file_name} from ${sites_available} and ${sites_enabled}"
             if [ -f "${sites_available}/${conf_file_name}" ]; then
