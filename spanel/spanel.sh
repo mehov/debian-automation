@@ -290,6 +290,15 @@ EOF
     fi
     if [ ! -d "${_ssl_certificate_dir}" ] && ${_letsencrypt} && [ -n "${CERTBOT_PATH}" ] && [ -f "${CERTBOT_PATH}" ]; then
         restart_nginx # restart so the host goes live and is verifiable
+        # Before continuing to Let's Encrypt, make sure the host is connectable
+        timeout 5 telnet ${HOST} 80 >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            printf "\n"
+            echo "Port 80 doesn't seem to be open on ${HOST}. Check firewall."
+            echo "(On a cloud platform, make sure an ingress rule is created.)"
+            read -p "When ready, press Enter to continue."
+        fi
+        # Prepare Let's Encrypt request
         domains="${HOST}"
         for alias in ${_aliases}; do
             domains="${domains},${alias}"

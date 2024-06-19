@@ -379,6 +379,7 @@ EOF
     do_install whois
     do_install idn
     do_install net-tools
+    do_install telnet
     if [ -n "${_email}" ]; then
         do_install nullmailer
     fi
