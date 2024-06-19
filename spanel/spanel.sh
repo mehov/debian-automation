@@ -310,7 +310,14 @@ EOF
         echo "${CERTBOT_PATH} certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email \"${letsencrypt_email}\" -d \"${domains}\""
         "${CERTBOT_PATH}" certonly --non-interactive --agree-tos --standalone --http-01-port 8008 --email "${letsencrypt_email}" -d "${domains}"
         if [ ! -r "${_ssl_certificate_dir}/fullchain.pem" ] || [ ! -r "${_ssl_certificate_dir}/privkey.pem" ]; then
-            echo "Can't find the certificate file. Aborting."
+            printf "\n"
+            echo "Certificate couldn't be issued, ${HOST} not added."
+            input "letsencrypt_debug" "Debug Let's Encrypt challenges?" true \
+            "Re-run certbot with --debug-challenges flag, which stops it after creating the challenge files. The files will remain available for you to manually check if they're accessible and fix connectivity issues, if any. Once ready, stop the process with Ctrl+C and try adding ${HOST} again."
+            if ${_letsencrypt_debug}; then
+                "${CERTBOT_PATH}" certonly --debug-challenges -v --agree-tos --standalone --http-01-port 8008 --email "${letsencrypt_email}" -d "${domains}"
+            fi
+            echo "Removing ${conf_file_name} from ${sites_available} and ${sites_enabled}"
             if [ -f "${sites_available}/${conf_file_name}" ]; then
                 rm "${sites_available}/${conf_file_name}"
             fi
