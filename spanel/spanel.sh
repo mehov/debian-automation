@@ -462,7 +462,9 @@ remove() {
 }
 
 certbot_update_all() {
-    ${CERTBOT_PATH} renew --non-interactive --standalone --http-01-port 8008 --allow-subset-of-names --deploy-hook "chown -R www-data \"\$RENEWED_LINEAGE\" && chown -R www-data /etc/letsencrypt/archive && service nginx reload"
+    CHOWN_PATH=$(which chown)
+    SERVICE_PATH=$(which service)
+    ${CERTBOT_PATH} renew --non-interactive --standalone --http-01-port 8008 --allow-subset-of-names --deploy-hook "${CHOWN_PATH} -R www-data \"\$RENEWED_LINEAGE\" && ${CHOWN_PATH} -R www-data /etc/letsencrypt/archive && ${SERVICE_PATH} nginx reload"
 }
 
 # Receive a path as an argument, make it writable to the web server
